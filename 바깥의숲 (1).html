@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>바깥의 숲</title>
+<style>
+  :root {
+    --sky-1: #a9dcff;
+    --sky-2: #d7f0ff;
+    --sky-3: #eef9f0;
+    --leaf-1: #d8f3dc;
+    --leaf-2: #b7e4c7;
+    --leaf-3: #74c69d;
+    --leaf-4: #40916c;
+    --leaf-5: #2d6a4f;
+    --leaf-6: #1b4332;
+    --bark: #7f5539;
+    --sun: #ffd166;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  html, body { height: 100%; }
+  body { background: var(--sky-3); -webkit-text-size-adjust: 100%; }
+
+  .screen { min-height: 100vh; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; position: relative; }
+  /* 휴대폰 주소창 때문에 화면이 잘리지 않도록 */
+  @supports (min-height: 100svh) {
+    .screen, #screen3 { min-height: 100svh; }
+  }
+  .screen.active { display: flex; }
+
+  /* 구름 (장식용) */
+  .cloud { position: absolute; pointer-events: none; background: #fff; border-radius: 999px; opacity: 0.85; }
+  .cloud::before, .cloud::after { content: ""; position: absolute; background: #fff; border-radius: 999px; }
+  .cloud.c1 { width: 110px; height: 34px; top: 12%; left: -140px; animation: drift 38s linear infinite; }
+  .cloud.c1::before { width: 52px; height: 52px; top: -22px; left: 18px; }
+  .cloud.c1::after { width: 38px; height: 38px; top: -14px; left: 58px; }
+  .cloud.c2 { width: 80px; height: 26px; top: 26%; left: -120px; opacity: 0.7; animation: drift 55s linear infinite 6s; }
+  .cloud.c2::before { width: 40px; height: 40px; top: -18px; left: 14px; }
+  .cloud.c2::after { width: 28px; height: 28px; top: -10px; left: 44px; }
+  @keyframes drift { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 260px)); } }
+
+  /* 나무 실루엣 (장식용) */
+  .treeline { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .treeline.back { height: 130px; opacity: 0.55;
+    background:
+      radial-gradient(circle at 30px 60px, var(--leaf-3) 30px, transparent 31px) 14px 100% / 60px 120px repeat-x,
+      linear-gradient(var(--leaf-3), var(--leaf-3)) 0 100% / 100% 44px no-repeat; }
+  .treeline.front { height: 110px;
+    background:
+      radial-gradient(circle at 26px 52px, var(--leaf-5) 26px, transparent 27px) 0 100% / 52px 104px repeat-x,
+      linear-gradient(var(--leaf-5), var(--leaf-5)) 0 100% / 100% 38px no-repeat; }
+
+  /* 1. 시작 화면 : 맑은 하늘과 숲 */
+  #screen1 {
+    gap: 14px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 82% 14%, rgba(255,209,102,0.95) 0 44px, rgba(255,209,102,0.28) 45px 66px, rgba(255,209,102,0) 67px),
+      linear-gradient(var(--sky-1) 0%, var(--sky-2) 46%, var(--sky-3) 74%, var(--leaf-1) 100%);
+  }
+  #screen1 > *:not(.cloud):not(.treeline) { position: relative; z-index: 2; }
+  #screen1 .emoji { font-size: 72px; filter: drop-shadow(0 6px 10px rgba(27,67,50,0.18)); animation: bob 4s ease-in-out infinite; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  #screen1 h1 { font-size: 40px; font-weight: 900; color: var(--leaf-6); text-shadow: 2px 2px 0 #ffffff, 0 8px 18px rgba(27,67,50,0.14); letter-spacing: -1px; }
+  #screen1 .sub1 { font-size: 18px; color: var(--leaf-5); font-weight: 700; }
+  #screen1 .sub2 { font-size: 14px; color: var(--leaf-4); background: rgba(255,255,255,0.7); padding: 6px 14px; border-radius: 999px; }
+  #dongInput {
+    font-size: 22px; padding: 14px 24px; border-radius: 999px;
+    border: 3px solid var(--leaf-3); background: rgba(255,255,255,0.95);
+    color: var(--leaf-6); text-align: center; width: 240px; outline: none;
+    box-shadow: 0 8px 20px rgba(27,67,50,0.12); transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  #dongInput::placeholder { color: #9ec9b2; }
+  #dongInput:focus { border-color: var(--leaf-4); box-shadow: 0 0 0 6px rgba(116,198,157,0.3); }
+  #dongHint { height: 24px; font-size: 14px; color: var(--leaf-5); font-weight: 700; }
+
+  /* 2. 설문 화면 : 아침 안개 낀 숲 */
+  #screen2 {
+    align-items: center; padding: 56px 20px 90px; justify-content: flex-start;
+    background: linear-gradient(var(--sky-2) 0%, #eaf7f0 55%, var(--leaf-1) 100%);
+  }
+  #screen2 h2 { color: var(--leaf-6); font-size: 26px; font-weight: 800; }
+  #screen2 h2::after { content: "🍃"; margin-left: 8px; }
+  .qblock {
+    width: 100%; max-width: 480px; margin-top: 24px; text-align: left;
+    background: rgba(255,255,255,0.88); border: 2px solid rgba(183,228,199,0.9);
+    border-radius: 22px; padding: 20px; box-shadow: 0 10px 24px rgba(27,67,50,0.08);
+  }
+  .qblock p { font-size: 17px; font-weight: 700; color: var(--leaf-6); }
+  .opts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .pill {
+    padding: 10px 18px; border-radius: 999px; border: 2px solid var(--leaf-2);
+    background: #fff; color: var(--leaf-5); font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: transform 0.15s, background 0.2s, border-color 0.2s, color 0.2s;
+  }
+  .pill:hover { border-color: var(--leaf-3); transform: translateY(-2px); }
+  .pill.selected {
+    background: linear-gradient(150deg, var(--leaf-3), var(--leaf-5));
+    color: #fff; border-color: var(--leaf-5);
+    box-shadow: 0 6px 14px rgba(45,106,79,0.3);
+  }
+  #nextBtn {
+    margin-top: 36px; padding: 15px 40px; font-size: 16px; font-weight: 700;
+    border-radius: 999px; border: none; background: #dbe9df; color: #9fb6a8; cursor: not-allowed;
+    transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+  }
+  #nextBtn.ready {
+    background: linear-gradient(150deg, var(--leaf-4), var(--leaf-6));
+    color: #fff; cursor: pointer; box-shadow: 0 10px 22px rgba(27,67,50,0.28);
+  }
+
+  /* 3. 방 선택 화면 : 숲속 오솔길 */
+  #screen3 { min-height: 100vh; flex-direction: column; padding: 0; justify-content: flex-start; background: var(--leaf-6); }
+  .roomBtn {
+    flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; border: none; border-top: 2px solid rgba(255,255,255,0.35);
+    color: #fff; cursor: pointer; padding: 20px; text-shadow: 0 2px 6px rgba(27,67,50,0.35);
+    transition: filter 0.2s;
+  }
+  .roomBtn:first-child { border-top: none; }
+  .roomBtn:nth-of-type(1) { background: linear-gradient(150deg, #9be0c0, var(--leaf-4)); }
+  .roomBtn:nth-of-type(2) { background: linear-gradient(150deg, var(--leaf-3), var(--leaf-5)); }
+  .roomBtn:nth-of-type(3) { background: linear-gradient(150deg, #86d7ea, var(--leaf-4)); }
+  .roomBtn:not(.full):hover { filter: brightness(1.07); }
+  .roomBtn.full { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.6); }
+  .roomBtn .name { font-size: 28px; font-weight: 800; }
+  .roomBtn .status { font-size: 15px; font-weight: 500; opacity: 0.95; }
+
+  /* 4. 마무리 화면 : 볕 좋은 숲 */
+  #screen4 {
+    gap: 18px; overflow: hidden;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(255,209,102,0.55) 0 60px, rgba(255,209,102,0) 61px),
+      linear-gradient(var(--sky-2) 0%, #eaf7ea 50%, var(--leaf-1) 100%);
+  }
+  #screen4 > *:not(.cloud):not(.treeline) { position: relative; z-index: 2; }
+  #screen4 p { color: var(--leaf-6); font-size: 20px; font-weight: 700; }
+  #screen4 .hint { color: var(--leaf-4); font-size: 14px; font-weight: 500; background: rgba(255,255,255,0.7); padding: 8px 16px; border-radius: 999px; }
+  #mascotLink { display: inline-block; animation: bob 4.5s ease-in-out infinite; filter: drop-shadow(0 10px 18px rgba(27,67,50,0.22)); }
+
+  /* 작은 휴대폰 화면 */
+  @media (max-width: 430px) {
+    #screen1 { gap: 12px; padding: 32px 18px; }
+    #screen1 .emoji { font-size: 56px; }
+    #screen1 h1 { font-size: 29px; letter-spacing: -0.5px; }
+    #screen1 .sub1 { font-size: 16px; }
+    #screen1 .sub2 { font-size: 13px; padding: 6px 12px; }
+    #dongInput { font-size: 20px; width: 100%; max-width: 260px; }
+    #screen2 { padding: 40px 16px 72px; }
+    #screen2 h2 { font-size: 23px; }
+    .qblock { padding: 16px; margin-top: 18px; border-radius: 18px; }
+    .qblock p { font-size: 16px; }
+    .pill { padding: 9px 15px; font-size: 13px; }
+    #nextBtn { margin-top: 28px; padding: 14px 34px; }
+    .roomBtn .name { font-size: 24px; }
+    .roomBtn .status { font-size: 14px; }
+    #screen4 p { font-size: 18px; }
+    #screen4 svg { width: 180px; height: 180px; }
+    .treeline.back { height: 100px; }
+    .treeline.front { height: 84px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cloud, #screen1 .emoji, #mascotLink { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="screen active" id="screen1">
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <div class="emoji">🌳🦊🌳</div>
+  <h1>놀러와요~ 바깥의 숲</h1>
+  <p class="sub1">어디 사세요?</p>
+  <p class="sub2">우산동 · 태장동 · 단계동 중 하나를 적어보세요</p>
+  <input id="dongInput" placeholder="예: 우산동" autocomplete="off" />
+  <div id="dongHint">&nbsp;</div>
+  <div class="treeline back"></div>
+  <div class="treeline front"></div>
+</div>
+
+<div class="screen" id="screen2">
+  <h2>설문조사</h2>
+  <div class="qblock">
+    <p>나는 외출 경험이 있다</p>
+    <div class="opts" data-q="outing">
+      <button class="pill" data-v="주1회">주1회</button>
+      <button class="pill" data-v="주2회">주2회</button>
+      <button class="pill" data-v="주3회">주3회</button>
+      <button class="pill" data-v="주4회">주4회</button>
+      <button class="pill" data-v="주5회">주5회</button>
+    </div>
+  </div>
+  <div class="qblock">
+    <p>나는 고립감을 느낀다</p>
+    <div class="opts" data-q="isolation">
+      <button class="pill" data-v="강도 1~2">강도 1~2</button>
+      <button class="pill" data-v="강도 3~4">강도 3~4</button>
+      <button class="pill" data-v="강도 5~6">강도 5~6</button>
+      <button class="pill" data-v="강도 7~8">강도 7~8</button>
+      <button class="pill" data-v="강도 9~10">강도 9~10</button>
+    </div>
+  </div>
+  <div class="qblock">
+    <p>당신은 몇 살입니까?</p>
+    <div class="opts" data-q="age">
+      <button class="pill" data-v="20대">20대</button>
+      <button class="pill" data-v="30대">30대</button>
+    </div>
+  </div>
+  <button id="nextBtn" disabled>다음</button>
+</div>
+
+<div class="screen" id="screen3">
+  <button class="roomBtn" data-dong="우산동">
+    <span class="name">우산동 방</span>
+    <span class="status">1/3명 · 입장 가능</span>
+  </button>
+  <button class="roomBtn full" data-dong="태장동" disabled>
+    <span class="name">태장동 방</span>
+    <span class="status">3/3명 · 정원이 찼어요</span>
+  </button>
+  <button class="roomBtn" data-dong="단계동">
+    <span class="name">단계동 방</span>
+    <span class="status">0/3명 · 입장 가능</span>
+  </button>
+</div>
+
+<div class="screen" id="screen4">
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <p id="roomLabel">방으로 이동할 준비가 됐어요</p>
+  <a id="mascotLink" href="#" target="_blank" rel="noopener noreferrer">
+    <svg width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="110" cy="202" rx="62" ry="10" fill="#1b4332" opacity="0.12"/>
+      <rect x="107" y="38" width="6" height="18" rx="3" fill="#7f5539"/>
+      <path d="M110 44 C110 28 121 20 134 18 C132 33 123 42 110 44 Z" fill="#74c69d"/>
+      <circle cx="110" cy="120" r="80" fill="#2d6a4f"/>
+      <ellipse cx="70" cy="70" rx="26" ry="34" fill="#2d6a4f"/>
+      <ellipse cx="150" cy="70" rx="26" ry="34" fill="#2d6a4f"/>
+      <ellipse cx="70" cy="78" rx="12" ry="16" fill="#b7e4c7"/>
+      <ellipse cx="150" cy="78" rx="12" ry="16" fill="#b7e4c7"/>
+      <ellipse cx="110" cy="142" rx="46" ry="40" fill="#d8f3dc" opacity="0.5"/>
+      <circle cx="82" cy="118" r="9" fill="#fff"/>
+      <circle cx="138" cy="118" r="9" fill="#fff"/>
+      <circle cx="82" cy="120" r="4" fill="#1b4332"/>
+      <circle cx="138" cy="120" r="4" fill="#1b4332"/>
+      <ellipse cx="110" cy="140" rx="10" ry="7" fill="#1b4332"/>
+      <path d="M95 155 Q110 165 125 155" stroke="#1b4332" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <circle cx="60" cy="140" r="10" fill="#ffd166" opacity="0.7"/>
+      <circle cx="160" cy="140" r="10" fill="#ffd166" opacity="0.7"/>
+    </svg>
+  </a>
+  <p class="hint">캐릭터를 눌러 카카오톡으로 이동하세요</p>
+  <div class="treeline back"></div>
+  <div class="treeline front"></div>
+</div>
+
+<script>
+  var DONGS = ["우산동", "태장동", "단계동"];
+  // 실제 오픈채팅방을 만든 뒤 아래 3개 값만 진짜 링크로 바꾸면 됩니다.
+  var KAKAO_LINKS = {
+    "우산동": "https://open.kakao.com/o/PLACEHOLDER_USANDONG",
+    "태장동": "https://open.kakao.com/o/PLACEHOLDER_TAEJANGDONG",
+    "단계동": "https://open.kakao.com/o/PLACEHOLDER_DANGYEDONG"
+  };
+
+  var answers = { outing: null, isolation: null, age: null };
+
+  function showScreen(n) {
+    document.querySelectorAll(".screen").forEach(function (el) { el.classList.remove("active"); });
+    document.getElementById("screen" + n).classList.add("active");
+  }
+
+  var dongInput = document.getElementById("dongInput");
+  var dongHint = document.getElementById("dongHint");
+  dongInput.addEventListener("input", function () {
+    var v = dongInput.value.trim();
+    if (DONGS.indexOf(v) !== -1) {
+      dongHint.textContent = v + "(으)로 이동할게요";
+      setTimeout(function () { showScreen(2); }, 500);
+    } else {
+      dongHint.textContent = " ";
+    }
+  });
+
+  function checkSurveyReady() {
+    var btn = document.getElementById("nextBtn");
+    var ready = answers.outing && answers.isolation && answers.age;
+    btn.disabled = !ready;
+    btn.classList.toggle("ready", !!ready);
+  }
+
+  document.querySelectorAll(".opts").forEach(function (group) {
+    var q = group.getAttribute("data-q");
+    group.querySelectorAll(".pill").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        answers[q] = btn.getAttribute("data-v");
+        group.querySelectorAll(".pill").forEach(function (b) { b.classList.remove("selected"); });
+        btn.classList.add("selected");
+        checkSurveyReady();
+      });
+    });
+  });
+
+  document.getElementById("nextBtn").addEventListener("click", function () {
+    if (!this.disabled) showScreen(3);
+  });
+
+  document.querySelectorAll(".roomBtn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (btn.disabled) return;
+      var dong = btn.getAttribute("data-dong");
+      document.getElementById("roomLabel").textContent = dong + " 방으로 이동할 준비가 됐어요";
+      document.getElementById("mascotLink").href = KAKAO_LINKS[dong];
+      showScreen(4);
+    });
+  });
+</script>
+
+</body>
+</html>

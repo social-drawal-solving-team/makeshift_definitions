@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>바깥의 숲</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  html, body { height: 100%; }
+  .screen { min-height: 100vh; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; }
+  .screen.active { display: flex; }
+  #screen1 { background: linear-gradient(#bfeaff, #d8f5c8); gap: 12px; }
+  #screen1 h1 { font-size: 40px; font-weight: 900; color: #2d6a4f; text-shadow: 2px 2px 0 #ffffff; }
+  #screen1 .sub1 { font-size: 18px; color: #1b4332; font-weight: 700; }
+  #screen1 .sub2 { font-size: 14px; color: #40916c; }
+  #dongInput { font-size: 22px; padding: 14px 24px; border-radius: 999px; border: 4px solid #40916c; text-align: center; width: 220px; outline: none; }
+  #dongHint { height: 22px; font-size: 14px; color: #2d6a4f; font-weight: 700; }
+
+  #screen2 { background: #0a0a0a; align-items: center; padding: 56px 20px 80px; }
+  #screen2 h2 { color: #f5f5f5; font-size: 24px; font-weight: 800; }
+  .qblock { width: 100%; max-width: 480px; margin-top: 32px; text-align: left; }
+  .qblock p { font-size: 17px; font-weight: 700; color: #f5f5f5; }
+  .opts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .pill { padding: 10px 18px; border-radius: 999px; border: 2px solid #333; background: #111; color: #eee; font-size: 14px; cursor: pointer; }
+  .pill.selected { background: #f5f5f5; color: #111; border: 2px solid #f5f5f5; }
+  #nextBtn { margin-top: 40px; padding: 14px 36px; font-size: 16px; font-weight: 700; border-radius: 999px; border: none; background: #333; color: #777; cursor: not-allowed; }
+  #nextBtn.ready { background: #7c3aed; color: #fff; cursor: pointer; }
+
+  #screen3 { min-height: 100vh; flex-direction: column; background: #0a0a0a; padding: 0; justify-content: flex-start; }
+  .roomBtn { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #7c3aed; border-top: 2px solid #0a0a0a; border-left: none; border-right: none; border-bottom: none; color: #fff; cursor: pointer; padding: 20px; }
+  .roomBtn.full { opacity: 0.45; cursor: not-allowed; }
+  .roomBtn .name { font-size: 28px; font-weight: 800; }
+  .roomBtn .status { font-size: 15px; font-weight: 500; }
+
+  #screen4 { background: #0a0a0a; gap: 20px; }
+  #screen4 p { color: #f5f5f5; font-size: 20px; font-weight: 700; }
+  #screen4 .hint { color: #999; font-size: 14px; font-weight: 400; }
+</style>
+</head>
+<body>
+
+<div class="screen active" id="screen1">
+  <div style="font-size:72px;">🌳🦊🌳</div>
+  <h1>놀러와요~ 바깥의 숲</h1>
+  <p class="sub1">어디 사세요?</p>
+  <p class="sub2">우산동 · 태장동 · 단계동 중 하나를 적어보세요</p>
+  <input id="dongInput" placeholder="예: 우산동" autocomplete="off" />
+  <div id="dongHint">&nbsp;</div>
+</div>
+
+<div class="screen" id="screen2">
+  <h2>설문조사</h2>
+  <div class="qblock">
+    <p>나는 외출 경험이 있다</p>
+    <div class="opts" data-q="outing">
+      <button class="pill" data-v="주1회">주1회</button>
+      <button class="pill" data-v="주2회">주2회</button>
+      <button class="pill" data-v="주3회">주3회</button>
+      <button class="pill" data-v="주4회">주4회</button>
+      <button class="pill" data-v="주5회">주5회</button>
+    </div>
+  </div>
+  <div class="qblock">
+    <p>나는 고립감을 느낀다</p>
+    <div class="opts" data-q="isolation">
+      <button class="pill" data-v="강도 1~2">강도 1~2</button>
+      <button class="pill" data-v="강도 3~4">강도 3~4</button>
+      <button class="pill" data-v="강도 5~6">강도 5~6</button>
+      <button class="pill" data-v="강도 7~8">강도 7~8</button>
+      <button class="pill" data-v="강도 9~10">강도 9~10</button>
+    </div>
+  </div>
+  <div class="qblock">
+    <p>당신은 몇 살입니까?</p>
+    <div class="opts" data-q="age">
+      <button class="pill" data-v="20대">20대</button>
+      <button class="pill" data-v="30대">30대</button>
+    </div>
+  </div>
+  <button id="nextBtn" disabled>다음</button>
+</div>
+
+<div class="screen" id="screen3">
+  <button class="roomBtn" data-dong="우산동">
+    <span class="name">우산동 방</span>
+    <span class="status">1/3명 · 입장 가능</span>
+  </button>
+  <button class="roomBtn full" data-dong="태장동" disabled>
+    <span class="name">태장동 방</span>
+    <span class="status">3/3명 · 정원이 찼어요</span>
+  </button>
+  <button class="roomBtn" data-dong="단계동">
+    <span class="name">단계동 방</span>
+    <span class="status">0/3명 · 입장 가능</span>
+  </button>
+</div>
+
+<div class="screen" id="screen4">
+  <p id="roomLabel">방으로 이동할 준비가 됐어요</p>
+  <a id="mascotLink" href="#" target="_blank" rel="noopener noreferrer">
+    <svg width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="110" cy="120" r="80" fill="#7c3aed"/>
+      <ellipse cx="70" cy="70" rx="26" ry="34" fill="#7c3aed"/>
+      <ellipse cx="150" cy="70" rx="26" ry="34" fill="#7c3aed"/>
+      <ellipse cx="70" cy="78" rx="12" ry="16" fill="#c4b5fd"/>
+      <ellipse cx="150" cy="78" rx="12" ry="16" fill="#c4b5fd"/>
+      <circle cx="82" cy="118" r="9" fill="#fff"/>
+      <circle cx="138" cy="118" r="9" fill="#fff"/>
+      <circle cx="82" cy="120" r="4" fill="#1f1f1f"/>
+      <circle cx="138" cy="120" r="4" fill="#1f1f1f"/>
+      <ellipse cx="110" cy="140" rx="10" ry="7" fill="#1f1f1f"/>
+      <path d="M95 155 Q110 165 125 155" stroke="#1f1f1f" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <circle cx="60" cy="140" r="10" fill="#c4b5fd" opacity="0.6"/>
+      <circle cx="160" cy="140" r="10" fill="#c4b5fd" opacity="0.6"/>
+    </svg>
+  </a>
+  <p class="hint">캐릭터를 눌러 카카오톡으로 이동하세요</p>
+</div>
+
+<script>
+  var DONGS = ["우산동", "태장동", "단계동"];
+  // 실제 오픈채팅방을 만든 뒤 아래 3개 값만 진짜 링크로 바꾸면 됩니다.
+  var KAKAO_LINKS = {
+    "우산동": "https://open.kakao.com/o/PLACEHOLDER_USANDONG",
+    "태장동": "https://open.kakao.com/o/PLACEHOLDER_TAEJANGDONG",
+    "단계동": "https://open.kakao.com/o/PLACEHOLDER_DANGYEDONG"
+  };
+
+  var answers = { outing: null, isolation: null, age: null };
+
+  function showScreen(n) {
+    document.querySelectorAll(".screen").forEach(function (el) { el.classList.remove("active"); });
+    document.getElementById("screen" + n).classList.add("active");
+  }
+
+  var dongInput = document.getElementById("dongInput");
+  var dongHint = document.getElementById("dongHint");
+  dongInput.addEventListener("input", function () {
+    var v = dongInput.value.trim();
+    if (DONGS.indexOf(v) !== -1) {
+      dongHint.textContent = v + "(으)로 이동할게요";
+      setTimeout(function () { showScreen(2); }, 500);
+    } else {
+      dongHint.textContent = " ";
+    }
+  });
+
+  function checkSurveyReady() {
+    var btn = document.getElementById("nextBtn");
+    var ready = answers.outing && answers.isolation && answers.age;
+    btn.disabled = !ready;
+    btn.classList.toggle("ready", !!ready);
+  }
+
+  document.querySelectorAll(".opts").forEach(function (group) {
+    var q = group.getAttribute("data-q");
+    group.querySelectorAll(".pill").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        answers[q] = btn.getAttribute("data-v");
+        group.querySelectorAll(".pill").forEach(function (b) { b.classList.remove("selected"); });
+        btn.classList.add("selected");
+        checkSurveyReady();
+      });
+    });
+  });
+
+  document.getElementById("nextBtn").addEventListener("click", function () {
+    if (!this.disabled) showScreen(3);
+  });
+
+  document.querySelectorAll(".roomBtn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (btn.disabled) return;
+      var dong = btn.getAttribute("data-dong");
+      document.getElementById("roomLabel").textContent = dong + " 방으로 이동할 준비가 됐어요";
+      document.getElementById("mascotLink").href = KAKAO_LINKS[dong];
+      showScreen(4);
+    });
+  });
+</script>
+
+</body>
+</html>
