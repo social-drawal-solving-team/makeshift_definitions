@@ -1,0 +1,9 @@
+{
+  "_설명": "방 정보와 대기 인원. 카카오톡에서 실제 인원을 확인한 뒤 waiting 값을 고쳐서 커밋하면 사이트에 바로 반영됩니다. 값을 모를 때는 null 로 두세요 (숫자 대신 '열려 있어요' 로 표시됩니다).",
+  "updatedAt": null,
+  "rooms": [
+    { "name": "우산동", "link": "https://open.kakao.com/o/g18bCHJi", "waiting": null },
+    { "name": "태장동", "link": "https://open.kakao.com/o/gf2ZFHJi", "waiting": null },
+    { "name": "단계동", "link": "https://open.kakao.com/o/geznGHJi", "waiting": null }
+  ]
+}

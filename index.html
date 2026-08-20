@@ -117,6 +117,8 @@
   .dongStat .n { font-size: 15px; font-weight: 700; color: var(--leaf-5); }
   .dongStat .c { font-size: 20px; font-weight: 900; color: var(--leaf-4); margin-top: 3px; }
   .dongStat .c small { font-size: 12px; font-weight: 700; }
+  .dongStat .c.open { font-size: 15px; color: var(--leaf-3); }
+  .dongStat .c.open::before { content: "● "; font-size: 10px; vertical-align: middle; }
 
   #startBtn {
     margin-top: 26px; width: 100%; max-width: 320px;
@@ -278,17 +280,14 @@
   <div class="heroWrap">
     <span class="heroBadge"><span class="liveDot"></span>원주 우산동 · 태장동 · 단계동</span>
     <div class="emoji">🌳🦊🌳</div>
-    <h1>지금 우리 동네에<br><span class="big" id="totalCount">0</span>명이 기다리고 있어요</h1>
+    <h1 id="heroTitle">우리 동네 이웃과<br>같은 방에서 만나요</h1>
     <div class="wordmark">동네방내</div>
 
-    <div class="dongStats">
-      <div class="dongStat"><div class="n">우산동</div><div class="c" data-count="우산동">0<small>명</small></div></div>
-      <div class="dongStat"><div class="n">태장동</div><div class="c" data-count="태장동">0<small>명</small></div></div>
-      <div class="dongStat"><div class="n">단계동</div><div class="c" data-count="단계동">0<small>명</small></div></div>
-    </div>
+    <div class="dongStats" id="dongStats"></div>
 
     <button id="startBtn">내 방 찾으러 가기 →</button>
     <p class="ctaSub">1분이면 끝나요 · 질문 6개</p>
+    <p class="ctaSub" id="updatedAt"></p>
   </div>
 
   <div class="treeline back"></div>
@@ -383,11 +382,7 @@
       <div class="qnum">LAST QUESTION</div>
       <h3>마지막이에요. 어느 동네에 사세요?</h3>
       <p class="qsub">고르시면 바로 그 동네 방으로 안내해드릴게요.</p>
-      <div class="opts" id="dongOpts">
-        <button class="pill" data-v="우산동">우산동<span class="meta">이웃 <b data-wait="우산동">0</b>명이 기다리는 중</span></button>
-        <button class="pill" data-v="태장동">태장동<span class="meta">이웃 <b data-wait="태장동">0</b>명이 기다리는 중</span></button>
-        <button class="pill" data-v="단계동">단계동<span class="meta">이웃 <b data-wait="단계동">0</b>명이 기다리는 중</span></button>
-      </div>
+      <div class="opts" id="dongOpts"></div>
     </div>
   </div>
 </div>
@@ -440,16 +435,18 @@
 (function () {
   "use strict";
 
-  var DONGS = ["우산동", "태장동", "단계동"];
-
-  var KAKAO_LINKS = {
-    "우산동": "https://open.kakao.com/o/g18bCHJi",
-    "태장동": "https://open.kakao.com/o/gf2ZFHJi",
-    "단계동": "https://open.kakao.com/o/geznGHJi"
+  /* rooms.json 을 못 읽었을 때 쓰는 값. 인원은 모르는 상태(null)로 둡니다. */
+  var FALLBACK = {
+    updatedAt: null,
+    rooms: [
+      { name: "우산동", link: "https://open.kakao.com/o/g18bCHJi", waiting: null },
+      { name: "태장동", link: "https://open.kakao.com/o/gf2ZFHJi", waiting: null },
+      { name: "단계동", link: "https://open.kakao.com/o/geznGHJi", waiting: null }
+    ]
   };
 
-  /* 방마다 기다리는 인원. 실제 인원으로 바꿔서 쓰세요. */
-  var WAITING = { "우산동": 12, "태장동": 9, "단계동": 7 };
+  var DONGS = [], KAKAO_LINKS = {}, WAITING = {};
+  var hasCounts = false;
 
   var answers = { interests: [], style: null, outing: null, isolation: null, age: null, dong: null };
 
@@ -459,28 +456,78 @@
   var barFill  = document.getElementById("barFill");
   var stepText = document.getElementById("stepText");
 
-  /* ───────── 인원수 카운트업 ───────── */
-  var total = DONGS.reduce(function (s, d) { return s + WAITING[d]; }, 0);
-
+  /* ───────── 방 정보 불러오기 ─────────
+     인원은 카카오톡에서 확인해 rooms.json 에 적어둔 값입니다.
+     카카오는 오픈채팅 참여 인원을 외부에 공개하지 않아 자동으로 가져올 수 없습니다. */
   function countUp(el, to, ms) {
     var start = null;
     function frame(t) {
       if (start === null) start = t;
       var p = Math.min((t - start) / ms, 1);
-      var eased = 1 - Math.pow(1 - p, 3);
-      el.firstChild.nodeValue = String(Math.round(to * eased));
+      el.textContent = String(Math.round(to * (1 - Math.pow(1 - p, 3))));
       if (p < 1) requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
   }
 
-  countUp(document.getElementById("totalCount"), total, 1100);
-  document.querySelectorAll("[data-count]").forEach(function (el) {
-    countUp(el, WAITING[el.getAttribute("data-count")], 1100);
-  });
-  document.querySelectorAll("[data-wait]").forEach(function (el) {
-    el.textContent = WAITING[el.getAttribute("data-wait")];
-  });
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  function waitLabel(dong, whenUnknown) {
+    return hasCounts ? "이웃 " + WAITING[dong] + "명이 기다리는 중" : whenUnknown;
+  }
+
+  function applyData(data) {
+    DONGS = []; KAKAO_LINKS = {}; WAITING = {};
+    data.rooms.forEach(function (r) {
+      DONGS.push(r.name);
+      KAKAO_LINKS[r.name] = r.link;
+      WAITING[r.name] = r.waiting;
+    });
+    hasCounts = data.rooms.every(function (r) { return typeof r.waiting === "number"; });
+
+    /* 첫 화면 */
+    var heroTitle = document.getElementById("heroTitle");
+    var stats = document.getElementById("dongStats");
+
+    if (hasCounts) {
+      var total = DONGS.reduce(function (s, d) { return s + WAITING[d]; }, 0);
+      heroTitle.innerHTML = '지금 우리 동네에<br><span class="big" id="totalCount">0</span>명이 기다리고 있어요';
+      countUp(document.getElementById("totalCount"), total, 1100);
+    }
+
+    stats.innerHTML = DONGS.map(function (d) {
+      var v = hasCounts
+        ? '<div class="c"><span data-count="' + esc(d) + '">0</span><small>명</small></div>'
+        : '<div class="c open">열림</div>';
+      return '<div class="dongStat"><div class="n">' + esc(d) + '</div>' + v + '</div>';
+    }).join("");
+
+    if (hasCounts) {
+      stats.querySelectorAll("[data-count]").forEach(function (el) {
+        countUp(el, WAITING[el.getAttribute("data-count")], 1100);
+      });
+    }
+
+    var updated = document.getElementById("updatedAt");
+    updated.textContent = (hasCounts && data.updatedAt) ? data.updatedAt + " 기준" : "";
+
+    /* 마지막 질문(지역) 선택지 */
+    document.getElementById("dongOpts").innerHTML = DONGS.map(function (d) {
+      return '<button class="pill" data-v="' + esc(d) + '">' + esc(d) +
+             '<span class="meta">' + waitLabel(d, "지금 열려 있어요") + '</span></button>';
+    }).join("");
+  }
+
+  applyData(FALLBACK);
+
+  fetch("rooms.json", { cache: "no-cache" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { if (d && d.rooms) applyData(d); })
+    .catch(function () { /* 못 읽으면 FALLBACK 그대로 씁니다. */ });
 
   /* ───────── 화면 이동 (브라우저 뒤로가기 연동) ───────── */
   var view = { screen: 1, step: 0 };
@@ -581,8 +628,10 @@
     var multi = group.getAttribute("data-multi") === "1";
     var nextBtn = card.querySelector(".multiNext");
 
-    group.querySelectorAll(".pill").forEach(function (btn) {
-      btn.addEventListener("click", function () {
+    /* 지역 선택지는 rooms.json 에 따라 다시 그려지므로 위임으로 처리합니다. */
+    group.addEventListener("click", function (e) {
+      var btn = e.target.closest(".pill");
+      if (btn && group.contains(btn)) {
         if (animating) return;
         var v = btn.getAttribute("data-v");
 
@@ -601,7 +650,7 @@
         group.querySelectorAll(".pill").forEach(function (b) { b.classList.remove("selected"); });
         btn.classList.add("selected");
         setTimeout(advance, idx === cards.length - 1 ? 520 : 380);
-      });
+      }
     });
 
     if (nextBtn) {
@@ -622,8 +671,8 @@
 
   function renderResult() {
     var dong = answers.dong;
-    resultTitle.innerHTML = "<b>" + dong + "</b> 방을 찾았어요!";
-    resultWaiting.textContent = "이웃 " + WAITING[dong] + "명이 기다리는 중";
+    resultTitle.innerHTML = "<b>" + esc(dong) + "</b> 방을 찾았어요!";
+    resultWaiting.textContent = waitLabel(dong, "방이 열려 있어요");
     kakaoBtn.href = KAKAO_LINKS[dong];
     mascotLink.href = KAKAO_LINKS[dong];
 
@@ -644,7 +693,8 @@
       a.href = KAKAO_LINKS[d];
       a.target = "_blank";
       a.rel = "noopener noreferrer";
-      a.innerHTML = "<span>" + d + " 방</span><span class='cnt'>" + WAITING[d] + "명 대기 중 →</span>";
+      a.innerHTML = "<span>" + esc(d) + " 방</span><span class='cnt'>" +
+        (hasCounts ? WAITING[d] + "명 대기 중 →" : "들어가기 →") + "</span>";
       otherRooms.appendChild(a);
     });
   }
