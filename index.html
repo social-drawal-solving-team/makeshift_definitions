@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>동네방내</title>
+<meta name="description" content="우리 동네 이웃과 연결되는 작은 방. 우산동 · 태장동 · 단계동" />
+<meta property="og:title" content="동네방내" />
+<meta property="og:description" content="우리 동네 이웃과 연결되는 작은 방" />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#eef9f0" />
+<style>
+  :root {
+    --sky-1: #a9dcff;
+    --sky-2: #d7f0ff;
+    --sky-3: #eef9f0;
+    --leaf-1: #d8f3dc;
+    --leaf-2: #b7e4c7;
+    --leaf-3: #74c69d;
+    --leaf-4: #40916c;
+    --leaf-5: #2d6a4f;
+    --leaf-6: #1b4332;
+    --bark: #7f5539;
+    --sun: #ffd166;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  html, body { height: 100%; }
+  body { background: var(--sky-3); -webkit-text-size-adjust: 100%; overflow: hidden; }
+
+  /* ── 화면 전환 : 겹쳐두고 부드럽게 페이드 ── */
+  .screen {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 20px; text-align: center; overflow-y: auto; overflow-x: hidden;
+    opacity: 0; visibility: hidden; transform: translateY(16px) scale(0.985);
+    transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.55s;
+  }
+  .screen.active { opacity: 1; visibility: visible; transform: none; }
+
+  /* 구름 (장식용) */
+  .cloud { position: absolute; pointer-events: none; background: #fff; border-radius: 999px; opacity: 0.85; }
+  .cloud::before, .cloud::after { content: ""; position: absolute; background: #fff; border-radius: 999px; }
+  .cloud.c1 { width: 110px; height: 34px; top: 12%; left: -140px; animation: drift 38s linear infinite; }
+  .cloud.c1::before { width: 52px; height: 52px; top: -22px; left: 18px; }
+  .cloud.c1::after { width: 38px; height: 38px; top: -14px; left: 58px; }
+  .cloud.c2 { width: 80px; height: 26px; top: 26%; left: -120px; opacity: 0.7; animation: drift 55s linear infinite 6s; }
+  .cloud.c2::before { width: 40px; height: 40px; top: -18px; left: 14px; }
+  .cloud.c2::after { width: 28px; height: 28px; top: -10px; left: 44px; }
+  @keyframes drift { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 260px)); } }
+
+  /* 나무 실루엣 (장식용) */
+  .treeline { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .treeline.back { height: 130px; opacity: 0.55;
+    background:
+      radial-gradient(circle at 30px 60px, var(--leaf-3) 30px, transparent 31px) 14px 100% / 60px 120px repeat-x,
+      linear-gradient(var(--leaf-3), var(--leaf-3)) 0 100% / 100% 44px no-repeat; }
+  .treeline.front { height: 110px;
+    background:
+      radial-gradient(circle at 26px 52px, var(--leaf-5) 26px, transparent 27px) 0 100% / 52px 104px repeat-x,
+      linear-gradient(var(--leaf-5), var(--leaf-5)) 0 100% / 100% 38px no-repeat; }
+
+  /* ── 1. 시작 화면 : 맑은 하늘과 숲 ── */
+  #screen1 {
+    gap: 14px;
+    background:
+      radial-gradient(circle at 82% 14%, rgba(255,209,102,0.95) 0 44px, rgba(255,209,102,0.28) 45px 66px, rgba(255,209,102,0) 67px),
+      linear-gradient(var(--sky-1) 0%, var(--sky-2) 46%, var(--sky-3) 74%, var(--leaf-1) 100%);
+  }
+  #screen1 > *:not(.cloud):not(.treeline) { position: relative; z-index: 2; }
+  #screen1 .emoji { font-size: 72px; filter: drop-shadow(0 6px 10px rgba(27,67,50,0.18)); animation: bob 4s ease-in-out infinite; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  #screen1 h1 { font-size: 44px; font-weight: 900; color: var(--leaf-6); text-shadow: 2px 2px 0 #ffffff, 0 8px 18px rgba(27,67,50,0.14); letter-spacing: -1.5px; }
+  #screen1 .tagline { font-size: 15px; color: var(--leaf-4); font-weight: 600; margin-top: -6px; }
+  #screen1 .sub1 { font-size: 18px; color: var(--leaf-5); font-weight: 700; margin-top: 8px; }
+  #screen1 .sub2 { font-size: 14px; color: var(--leaf-4); background: rgba(255,255,255,0.7); padding: 6px 14px; border-radius: 999px; }
+  #dongInput {
+    font-size: 22px; padding: 14px 24px; border-radius: 999px;
+    border: 3px solid var(--leaf-3); background: rgba(255,255,255,0.95);
+    color: var(--leaf-6); text-align: center; width: 240px; outline: none;
+    box-shadow: 0 8px 20px rgba(27,67,50,0.12); transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  #dongInput::placeholder { color: #9ec9b2; }
+  #dongInput:focus { border-color: var(--leaf-4); box-shadow: 0 0 0 6px rgba(116,198,157,0.3); }
+  #dongHint { height: 24px; font-size: 14px; color: var(--leaf-5); font-weight: 700; opacity: 0; transition: opacity 0.3s; }
+  #dongHint.show { opacity: 1; }
+
+  /* ── 2. 설문 화면 : 한 번에 한 질문씩 ── */
+  #screen2 {
+    background: linear-gradient(var(--sky-2) 0%, #eaf7f0 55%, var(--leaf-1) 100%);
+    justify-content: center;
+  }
+  .surveyWrap { width: 100%; max-width: 480px; margin: auto 0; position: relative; z-index: 2; }
+
+  .progress { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 26px; }
+  .dots { display: flex; gap: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 999px; background: rgba(64,145,108,0.25); transition: background 0.35s, width 0.35s; }
+  .dot.done { background: var(--leaf-3); }
+  .dot.now { background: var(--leaf-5); width: 26px; }
+  .stepText { font-size: 13px; font-weight: 700; color: var(--leaf-4); letter-spacing: 0.3px; }
+
+  .qcard {
+    display: none; text-align: left;
+    background: rgba(255,255,255,0.9); border: 2px solid rgba(183,228,199,0.9);
+    border-radius: 24px; padding: 26px 22px; box-shadow: 0 14px 30px rgba(27,67,50,0.1);
+  }
+  .qcard.active { display: block; animation: cardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .qcard.leaving { display: block; animation: cardOut 0.24s ease both; }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+  @keyframes cardOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-14px); } }
+
+  .qcard .qnum { font-size: 12px; font-weight: 800; color: var(--leaf-3); letter-spacing: 1px; }
+  .qcard h3 { font-size: 21px; font-weight: 800; color: var(--leaf-6); line-height: 1.4; margin-top: 6px; letter-spacing: -0.5px; }
+  .qcard .qsub { font-size: 13.5px; color: var(--leaf-4); font-weight: 500; margin-top: 8px; line-height: 1.5; }
+
+  .opts { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+  .pill {
+    width: 100%; text-align: left; padding: 15px 20px; border-radius: 16px;
+    border: 2px solid var(--leaf-2); background: #fff; color: var(--leaf-5);
+    font-size: 15.5px; font-weight: 600; cursor: pointer;
+    transition: transform 0.15s, background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s;
+  }
+  .pill:hover { border-color: var(--leaf-3); transform: translateX(3px); }
+  .pill.selected {
+    background: linear-gradient(150deg, var(--leaf-3), var(--leaf-5));
+    color: #fff; border-color: var(--leaf-5);
+    box-shadow: 0 8px 18px rgba(45,106,79,0.3); transform: translateX(3px);
+  }
+
+  #backBtn {
+    margin-top: 18px; padding: 9px 20px; font-size: 13.5px; font-weight: 600;
+    border-radius: 999px; border: none; background: rgba(255,255,255,0.75); color: var(--leaf-4);
+    cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.3s, background 0.2s;
+  }
+  #backBtn.show { opacity: 1; pointer-events: auto; }
+  #backBtn:hover { background: #fff; }
+
+  /* ── 3. 방 선택 화면 : 숲속 오솔길 ── */
+  #screen3 { padding: 0; justify-content: flex-start; background: var(--leaf-6); }
+  .roomBtn {
+    flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; border: none; border-top: 2px solid rgba(255,255,255,0.35);
+    color: #fff; cursor: pointer; padding: 20px; text-shadow: 0 2px 6px rgba(27,67,50,0.35);
+    transition: filter 0.25s;
+  }
+  .roomBtn:first-child { border-top: none; }
+  .roomBtn:nth-of-type(1) { background: linear-gradient(150deg, #9be0c0, var(--leaf-4)); }
+  .roomBtn:nth-of-type(2) { background: linear-gradient(150deg, var(--leaf-3), var(--leaf-5)); }
+  .roomBtn:nth-of-type(3) { background: linear-gradient(150deg, #86d7ea, var(--leaf-4)); }
+  .roomBtn:hover { filter: brightness(1.08); }
+  .roomBtn .name { font-size: 28px; font-weight: 800; }
+  .roomBtn .status { font-size: 15px; font-weight: 500; opacity: 0.95; }
+  .roomBtn .badge {
+    font-size: 12px; font-weight: 800; background: rgba(255,255,255,0.92); color: var(--leaf-5);
+    padding: 4px 12px; border-radius: 999px; text-shadow: none; display: none;
+  }
+  .roomBtn.mine .badge { display: inline-block; }
+  .roomBtn.mine { box-shadow: inset 0 0 0 4px rgba(255,255,255,0.9); }
+
+  /* ── 4. 마무리 화면 : 볕 좋은 숲 ── */
+  #screen4 {
+    gap: 18px;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(255,209,102,0.55) 0 60px, rgba(255,209,102,0) 61px),
+      linear-gradient(var(--sky-2) 0%, #eaf7ea 50%, var(--leaf-1) 100%);
+  }
+  #screen4 > *:not(.cloud):not(.treeline) { position: relative; z-index: 2; }
+  #screen4 p { color: var(--leaf-6); font-size: 20px; font-weight: 700; }
+  #screen4 .hint { color: var(--leaf-4); font-size: 14px; font-weight: 500; background: rgba(255,255,255,0.7); padding: 8px 16px; border-radius: 999px; }
+  #mascotLink { display: inline-block; animation: bob 4.5s ease-in-out infinite; filter: drop-shadow(0 10px 18px rgba(27,67,50,0.22)); transition: transform 0.2s; }
+  #mascotLink:hover { transform: scale(1.04); }
+  #kakaoBtn {
+    display: inline-block; padding: 15px 34px; border-radius: 999px; text-decoration: none;
+    background: linear-gradient(150deg, #ffe066, #fcd200); color: #3b2f00;
+    font-size: 16px; font-weight: 800; box-shadow: 0 10px 24px rgba(252,210,0,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  #kakaoBtn:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(252,210,0,0.5); }
+  #restartBtn {
+    background: none; border: none; color: var(--leaf-4); font-size: 13px; font-weight: 600;
+    cursor: pointer; text-decoration: underline; padding: 4px;
+  }
+
+  /* 작은 휴대폰 화면 */
+  @media (max-width: 430px) {
+    #screen1 { gap: 12px; padding: 32px 18px; }
+    #screen1 .emoji { font-size: 56px; }
+    #screen1 h1 { font-size: 34px; letter-spacing: -1px; }
+    #screen1 .tagline { font-size: 13.5px; }
+    #screen1 .sub1 { font-size: 16px; }
+    #screen1 .sub2 { font-size: 13px; padding: 6px 12px; }
+    #dongInput { font-size: 20px; width: 100%; max-width: 260px; }
+    #screen2 { padding: 32px 16px; }
+    .qcard { padding: 22px 18px; border-radius: 20px; }
+    .qcard h3 { font-size: 19px; }
+    .pill { padding: 14px 17px; font-size: 15px; }
+    .roomBtn .name { font-size: 24px; }
+    .roomBtn .status { font-size: 14px; }
+    #screen4 p { font-size: 18px; }
+    #screen4 svg { width: 170px; height: 170px; }
+    .treeline.back { height: 100px; }
+    .treeline.front { height: 84px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cloud, #screen1 .emoji, #mascotLink { animation: none; }
+    .screen, .qcard.active, .qcard.leaving { transition-duration: 0.01s; animation-duration: 0.01s; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 1. 시작 -->
+<div class="screen active" id="screen1">
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <div class="emoji">🌳🦊🌳</div>
+  <h1>동네방내</h1>
+  <p class="tagline">우리 동네, 방 안에서 만나요</p>
+  <p class="sub1">어디 사세요?</p>
+  <p class="sub2">우산동 · 태장동 · 단계동 중 하나를 적어보세요</p>
+  <input id="dongInput" placeholder="예: 우산동" autocomplete="off" />
+  <div id="dongHint">&nbsp;</div>
+  <div class="treeline back"></div>
+  <div class="treeline front"></div>
+</div>
+
+<!-- 2. 설문 (한 번에 한 질문씩) -->
+<div class="screen" id="screen2">
+  <div class="surveyWrap">
+    <div class="progress">
+      <div class="dots">
+        <span class="dot now"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+      <div class="stepText" id="stepText">1 / 3</div>
+    </div>
+
+    <div class="qcard active" data-q="outing">
+      <div class="qnum">QUESTION 1</div>
+      <h3>일주일에 외출은 얼마나 하시나요?</h3>
+      <p class="qsub">산책, 장보기처럼 가벼운 나들이도 괜찮아요.</p>
+      <div class="opts">
+        <button class="pill" data-v="주 1회 이하">거의 나가지 않아요</button>
+        <button class="pill" data-v="주 1~2회">일주일에 한두 번쯤</button>
+        <button class="pill" data-v="주 3회">일주일에 세 번쯤</button>
+        <button class="pill" data-v="주 4~5회">일주일에 네댓 번쯤</button>
+        <button class="pill" data-v="거의 매일">거의 매일 나가요</button>
+      </div>
+    </div>
+
+    <div class="qcard" data-q="isolation">
+      <div class="qnum">QUESTION 2</div>
+      <h3>요즘 혼자라고 느끼는 순간이 있으신가요?</h3>
+      <p class="qsub">정답은 없어요. 가장 가까운 쪽을 골라주세요.</p>
+      <div class="opts">
+        <button class="pill" data-v="1~2">거의 느끼지 않아요</button>
+        <button class="pill" data-v="3~4">가끔 그런 날이 있어요</button>
+        <button class="pill" data-v="5~6">종종 그렇게 느껴요</button>
+        <button class="pill" data-v="7~8">자주 그런 편이에요</button>
+        <button class="pill" data-v="9~10">거의 늘 그렇게 느껴요</button>
+      </div>
+    </div>
+
+    <div class="qcard" data-q="age">
+      <div class="qnum">QUESTION 3</div>
+      <h3>연령대가 어떻게 되시나요?</h3>
+      <p class="qsub">비슷한 또래끼리 편하게 이야기 나누시라고 여쭤봐요.</p>
+      <div class="opts">
+        <button class="pill" data-v="20대 초반">20대 초반 (20~23세)</button>
+        <button class="pill" data-v="20대 중반">20대 중반 (24~26세)</button>
+        <button class="pill" data-v="20대 후반">20대 후반 (27~29세)</button>
+        <button class="pill" data-v="30대 초반">30대 초반 (30~33세)</button>
+      </div>
+    </div>
+
+    <button id="backBtn">← 이전 질문</button>
+  </div>
+</div>
+
+<!-- 3. 방 선택 -->
+<div class="screen" id="screen3">
+  <button class="roomBtn" data-dong="우산동">
+    <span class="badge">내 동네</span>
+    <span class="name">우산동 방</span>
+    <span class="status">지금 입장할 수 있어요</span>
+  </button>
+  <button class="roomBtn" data-dong="태장동">
+    <span class="badge">내 동네</span>
+    <span class="name">태장동 방</span>
+    <span class="status">지금 입장할 수 있어요</span>
+  </button>
+  <button class="roomBtn" data-dong="단계동">
+    <span class="badge">내 동네</span>
+    <span class="name">단계동 방</span>
+    <span class="status">지금 입장할 수 있어요</span>
+  </button>
+</div>
+
+<!-- 4. 마무리 -->
+<div class="screen" id="screen4">
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <p id="roomLabel">방으로 이동할 준비가 됐어요</p>
+  <a id="mascotLink" href="#" target="_blank" rel="noopener noreferrer">
+    <svg width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="110" cy="202" rx="62" ry="10" fill="#1b4332" opacity="0.12"/>
+      <rect x="107" y="38" width="6" height="18" rx="3" fill="#7f5539"/>
+      <path d="M110 44 C110 28 121 20 134 18 C132 33 123 42 110 44 Z" fill="#74c69d"/>
+      <circle cx="110" cy="120" r="80" fill="#2d6a4f"/>
+      <ellipse cx="70" cy="70" rx="26" ry="34" fill="#2d6a4f"/>
+      <ellipse cx="150" cy="70" rx="26" ry="34" fill="#2d6a4f"/>
+      <ellipse cx="70" cy="78" rx="12" ry="16" fill="#b7e4c7"/>
+      <ellipse cx="150" cy="78" rx="12" ry="16" fill="#b7e4c7"/>
+      <ellipse cx="110" cy="142" rx="46" ry="40" fill="#d8f3dc" opacity="0.5"/>
+      <circle cx="82" cy="118" r="9" fill="#fff"/>
+      <circle cx="138" cy="118" r="9" fill="#fff"/>
+      <circle cx="82" cy="120" r="4" fill="#1b4332"/>
+      <circle cx="138" cy="120" r="4" fill="#1b4332"/>
+      <ellipse cx="110" cy="140" rx="10" ry="7" fill="#1b4332"/>
+      <path d="M95 155 Q110 165 125 155" stroke="#1b4332" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <circle cx="60" cy="140" r="10" fill="#ffd166" opacity="0.7"/>
+      <circle cx="160" cy="140" r="10" fill="#ffd166" opacity="0.7"/>
+    </svg>
+  </a>
+  <a id="kakaoBtn" href="#" target="_blank" rel="noopener noreferrer">카카오톡 오픈채팅 열기</a>
+  <p class="hint">캐릭터나 버튼을 누르면 카카오톡으로 이동해요</p>
+  <button id="restartBtn">처음부터 다시 하기</button>
+  <div class="treeline back"></div>
+  <div class="treeline front"></div>
+</div>
+
+<script>
+  var DONGS = ["우산동", "태장동", "단계동"];
+
+  var KAKAO_LINKS = {
+    "우산동": "https://open.kakao.com/o/g18bCHJi",
+    "태장동": "https://open.kakao.com/o/gf2ZFHJi",
+    "단계동": "https://open.kakao.com/o/geznGHJi"
+  };
+
+  var answers = { outing: null, isolation: null, age: null };
+  var myDong = null;
+
+  /* ── 화면 전환 ── */
+  function showScreen(n) {
+    document.querySelectorAll(".screen").forEach(function (el) { el.classList.remove("active"); });
+    document.getElementById("screen" + n).classList.add("active");
+  }
+
+  /* ── 1. 동네 입력 ── */
+  var dongInput = document.getElementById("dongInput");
+  var dongHint = document.getElementById("dongHint");
+  var moving = false;
+
+  dongInput.addEventListener("input", function () {
+    if (moving) return;
+    var v = dongInput.value.trim();
+    if (DONGS.indexOf(v) !== -1) {
+      myDong = v;
+      moving = true;
+      dongHint.textContent = v + " 이웃이시군요, 반가워요!";
+      dongHint.classList.add("show");
+      dongInput.blur();
+      setTimeout(function () { showScreen(2); }, 900);
+    } else {
+      dongHint.textContent = " ";
+      dongHint.classList.remove("show");
+    }
+  });
+
+  /* ── 2. 설문 : 한 번에 한 질문씩 ── */
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".qcard"));
+  var dots = Array.prototype.slice.call(document.querySelectorAll(".dot"));
+  var stepText = document.getElementById("stepText");
+  var backBtn = document.getElementById("backBtn");
+  var step = 0;
+  var animating = false;
+
+  function paintProgress() {
+    dots.forEach(function (d, i) {
+      d.classList.toggle("done", i < step);
+      d.classList.toggle("now", i === step);
+    });
+    stepText.textContent = (step + 1) + " / " + cards.length;
+    backBtn.classList.toggle("show", step > 0);
+  }
+
+  function goToStep(next, dir) {
+    if (animating || next === step) return;
+    animating = true;
+    var from = cards[step];
+    from.classList.add("leaving");
+    setTimeout(function () {
+      from.classList.remove("active", "leaving");
+      step = next;
+      cards[step].classList.add("active");
+      paintProgress();
+      animating = false;
+    }, 240);
+  }
+
+  cards.forEach(function (card) {
+    var q = card.getAttribute("data-q");
+    card.querySelectorAll(".pill").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (animating) return;
+        answers[q] = btn.getAttribute("data-v");
+        card.querySelectorAll(".pill").forEach(function (b) { b.classList.remove("selected"); });
+        btn.classList.add("selected");
+
+        if (step < cards.length - 1) {
+          setTimeout(function () { goToStep(step + 1); }, 420);
+        } else {
+          setTimeout(function () { showScreen(3); }, 620);
+        }
+      });
+    });
+  });
+
+  backBtn.addEventListener("click", function () {
+    if (step > 0) goToStep(step - 1);
+  });
+
+  paintProgress();
+
+  /* ── 3. 방 선택 ── */
+  document.querySelectorAll(".roomBtn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var dong = btn.getAttribute("data-dong");
+      document.getElementById("roomLabel").textContent = dong + " 방으로 이동할 준비가 됐어요";
+      document.getElementById("mascotLink").href = KAKAO_LINKS[dong];
+      document.getElementById("kakaoBtn").href = KAKAO_LINKS[dong];
+      showScreen(4);
+    });
+  });
+
+  /* 내 동네 강조 : 설문이 끝나고 3번 화면이 뜰 때 표시 */
+  var screen3 = document.getElementById("screen3");
+  new MutationObserver(function () {
+    if (!screen3.classList.contains("active") || !myDong) return;
+    document.querySelectorAll(".roomBtn").forEach(function (btn) {
+      btn.classList.toggle("mine", btn.getAttribute("data-dong") === myDong);
+    });
+  }).observe(screen3, { attributes: true, attributeFilter: ["class"] });
+
+  /* ── 4. 다시 시작 ── */
+  document.getElementById("restartBtn").addEventListener("click", function () {
+    answers = { outing: null, isolation: null, age: null };
+    myDong = null;
+    moving = false;
+    dongInput.value = "";
+    dongHint.textContent = " ";
+    dongHint.classList.remove("show");
+    document.querySelectorAll(".pill").forEach(function (b) { b.classList.remove("selected"); });
+    cards.forEach(function (c) { c.classList.remove("active", "leaving"); });
+    step = 0;
+    cards[0].classList.add("active");
+    paintProgress();
+    showScreen(1);
+  });
+</script>
+
+</body>
+</html>
