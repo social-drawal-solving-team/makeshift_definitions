@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>동네방내</title>
-<meta name="description" content="우리 동네 이웃과 연결되는 작은 방. 우산동 · 태장동 · 단계동" />
+<meta name="description" content="우리 동네 이웃이 방에서 기다리고 있어요. 우산동 · 태장동 · 단계동 오픈채팅." />
 <meta property="og:title" content="동네방내" />
-<meta property="og:description" content="우리 동네 이웃과 연결되는 작은 방" />
+<meta property="og:description" content="우리 동네 이웃이 방에서 기다리고 있어요" />
 <meta property="og:type" content="website" />
 <meta name="theme-color" content="#eef9f0" />
 <style>
@@ -28,217 +28,318 @@
   html, body { height: 100%; }
   body { background: var(--sky-3); -webkit-text-size-adjust: 100%; overflow: hidden; }
 
-  /* ── 화면 전환 : 겹쳐두고 부드럽게 페이드 ── */
+  /* ── 상단 바 (뒤로가기) ── */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 58px; z-index: 200;
+    display: flex; align-items: center; gap: 10px; padding: 0 14px;
+    padding-top: env(safe-area-inset-top, 0px);
+    opacity: 0; pointer-events: none; transition: opacity 0.35s ease;
+  }
+  .topbar.show { opacity: 1; pointer-events: auto; }
+  #backBtn {
+    width: 42px; height: 42px; flex: none; border: none; border-radius: 999px; cursor: pointer;
+    background: rgba(255,255,255,0.9); color: var(--leaf-5);
+    font-size: 21px; line-height: 1; font-weight: 700;
+    box-shadow: 0 4px 14px rgba(27,67,50,0.16);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s, background 0.2s;
+  }
+  #backBtn:hover { background: #fff; transform: translateX(-2px); }
+  #backBtn:active { transform: scale(0.94); }
+  .topbar .brand { font-size: 16px; font-weight: 800; color: var(--leaf-6); letter-spacing: -0.5px; }
+
+  /* ── 화면 전환 ── */
   .screen {
     position: fixed; inset: 0;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 40px 20px; text-align: center; overflow-y: auto; overflow-x: hidden;
     opacity: 0; visibility: hidden; transform: translateY(16px) scale(0.985);
-    transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.55s;
+    transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.5s;
   }
   .screen.active { opacity: 1; visibility: visible; transform: none; }
 
-  /* 구름 (장식용) */
+  /* 구름 · 나무 (장식용) */
   .cloud { position: absolute; pointer-events: none; background: #fff; border-radius: 999px; opacity: 0.85; }
   .cloud::before, .cloud::after { content: ""; position: absolute; background: #fff; border-radius: 999px; }
-  .cloud.c1 { width: 110px; height: 34px; top: 12%; left: -140px; animation: drift 38s linear infinite; }
+  .cloud.c1 { width: 110px; height: 34px; top: 10%; left: -140px; animation: drift 38s linear infinite; }
   .cloud.c1::before { width: 52px; height: 52px; top: -22px; left: 18px; }
   .cloud.c1::after { width: 38px; height: 38px; top: -14px; left: 58px; }
-  .cloud.c2 { width: 80px; height: 26px; top: 26%; left: -120px; opacity: 0.7; animation: drift 55s linear infinite 6s; }
+  .cloud.c2 { width: 80px; height: 26px; top: 24%; left: -120px; opacity: 0.7; animation: drift 55s linear infinite 6s; }
   .cloud.c2::before { width: 40px; height: 40px; top: -18px; left: 14px; }
   .cloud.c2::after { width: 28px; height: 28px; top: -10px; left: 44px; }
   @keyframes drift { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 260px)); } }
 
-  /* 나무 실루엣 (장식용) */
   .treeline { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
-  .treeline.back { height: 130px; opacity: 0.55;
+  .treeline.back { height: 120px; opacity: 0.5;
     background:
       radial-gradient(circle at 30px 60px, var(--leaf-3) 30px, transparent 31px) 14px 100% / 60px 120px repeat-x,
-      linear-gradient(var(--leaf-3), var(--leaf-3)) 0 100% / 100% 44px no-repeat; }
-  .treeline.front { height: 110px;
+      linear-gradient(var(--leaf-3), var(--leaf-3)) 0 100% / 100% 40px no-repeat; }
+  .treeline.front { height: 96px;
     background:
       radial-gradient(circle at 26px 52px, var(--leaf-5) 26px, transparent 27px) 0 100% / 52px 104px repeat-x,
-      linear-gradient(var(--leaf-5), var(--leaf-5)) 0 100% / 100% 38px no-repeat; }
+      linear-gradient(var(--leaf-5), var(--leaf-5)) 0 100% / 100% 34px no-repeat; }
 
-  /* ── 1. 시작 화면 : 맑은 하늘과 숲 ── */
+  /* ── 1. 시작 화면 : 지금 몇 명이 기다리는지 ── */
   #screen1 {
-    gap: 14px;
+    gap: 0;
     background:
-      radial-gradient(circle at 82% 14%, rgba(255,209,102,0.95) 0 44px, rgba(255,209,102,0.28) 45px 66px, rgba(255,209,102,0) 67px),
-      linear-gradient(var(--sky-1) 0%, var(--sky-2) 46%, var(--sky-3) 74%, var(--leaf-1) 100%);
+      radial-gradient(circle at 84% 12%, rgba(255,209,102,0.95) 0 40px, rgba(255,209,102,0.26) 41px 62px, rgba(255,209,102,0) 63px),
+      linear-gradient(var(--sky-1) 0%, var(--sky-2) 44%, var(--sky-3) 72%, var(--leaf-1) 100%);
   }
   #screen1 > *:not(.cloud):not(.treeline) { position: relative; z-index: 2; }
-  #screen1 .emoji { font-size: 72px; filter: drop-shadow(0 6px 10px rgba(27,67,50,0.18)); animation: bob 4s ease-in-out infinite; }
-  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-  #screen1 h1 { font-size: 44px; font-weight: 900; color: var(--leaf-6); text-shadow: 2px 2px 0 #ffffff, 0 8px 18px rgba(27,67,50,0.14); letter-spacing: -1.5px; }
-  #screen1 .tagline { font-size: 15px; color: var(--leaf-4); font-weight: 600; margin-top: -6px; }
-  #screen1 .sub1 { font-size: 18px; color: var(--leaf-5); font-weight: 700; margin-top: 8px; }
-  #screen1 .sub2 { font-size: 14px; color: var(--leaf-4); background: rgba(255,255,255,0.7); padding: 6px 14px; border-radius: 999px; }
-  #dongInput {
-    font-size: 22px; padding: 14px 24px; border-radius: 999px;
-    border: 3px solid var(--leaf-3); background: rgba(255,255,255,0.95);
-    color: var(--leaf-6); text-align: center; width: 240px; outline: none;
-    box-shadow: 0 8px 20px rgba(27,67,50,0.12); transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  #dongInput::placeholder { color: #9ec9b2; }
-  #dongInput:focus { border-color: var(--leaf-4); box-shadow: 0 0 0 6px rgba(116,198,157,0.3); }
-  #dongHint { height: 24px; font-size: 14px; color: var(--leaf-5); font-weight: 700; opacity: 0; transition: opacity 0.3s; }
-  #dongHint.show { opacity: 1; }
+  .heroWrap { width: 100%; max-width: 460px; display: flex; flex-direction: column; align-items: center; margin: auto 0; }
 
-  /* ── 2. 설문 화면 : 한 번에 한 질문씩 ── */
+  .heroBadge {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 13px; font-weight: 700; color: var(--leaf-5);
+    background: rgba(255,255,255,0.85); padding: 7px 15px; border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(27,67,50,0.08);
+  }
+  .liveDot { width: 7px; height: 7px; border-radius: 999px; background: #ef476f; animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.75); } }
+
+  #screen1 .emoji { font-size: 60px; margin-top: 16px; filter: drop-shadow(0 6px 10px rgba(27,67,50,0.18)); animation: bob 4s ease-in-out infinite; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+  #screen1 h1 {
+    margin-top: 12px; font-size: 30px; font-weight: 900; color: var(--leaf-6);
+    line-height: 1.34; letter-spacing: -1.2px;
+    text-shadow: 1px 1px 0 rgba(255,255,255,0.9);
+  }
+  #screen1 h1 .big { font-size: 40px; color: var(--leaf-4); }
+  #screen1 .wordmark { margin-top: 14px; font-size: 15px; font-weight: 800; color: var(--leaf-4); letter-spacing: 2px; }
+
+  .dongStats { display: flex; gap: 9px; margin-top: 20px; width: 100%; }
+  .dongStat {
+    flex: 1; background: rgba(255,255,255,0.86); border: 2px solid rgba(183,228,199,0.85);
+    border-radius: 16px; padding: 13px 6px; box-shadow: 0 6px 16px rgba(27,67,50,0.07);
+  }
+  .dongStat .n { font-size: 15px; font-weight: 700; color: var(--leaf-5); }
+  .dongStat .c { font-size: 20px; font-weight: 900; color: var(--leaf-4); margin-top: 3px; }
+  .dongStat .c small { font-size: 12px; font-weight: 700; }
+
+  #startBtn {
+    margin-top: 26px; width: 100%; max-width: 320px;
+    padding: 17px 30px; font-size: 17px; font-weight: 800; letter-spacing: -0.3px;
+    border-radius: 999px; border: none; cursor: pointer; color: #fff;
+    background: linear-gradient(150deg, var(--leaf-4), var(--leaf-6));
+    box-shadow: 0 12px 26px rgba(27,67,50,0.32);
+    transition: transform 0.18s, box-shadow 0.18s;
+    animation: nudge 2.6s ease-in-out infinite;
+  }
+  #startBtn:hover { transform: translateY(-3px); box-shadow: 0 16px 30px rgba(27,67,50,0.38); }
+  #startBtn:active { transform: scale(0.97); }
+  @keyframes nudge { 0%, 92%, 100% { transform: translateY(0); } 96% { transform: translateY(-5px); } }
+
+  #screen1 .ctaSub { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--leaf-4); }
+
+  /* ── 2. 설문 화면 ── */
   #screen2 {
     background: linear-gradient(var(--sky-2) 0%, #eaf7f0 55%, var(--leaf-1) 100%);
-    justify-content: center;
+    padding-top: 76px;
   }
   .surveyWrap { width: 100%; max-width: 480px; margin: auto 0; position: relative; z-index: 2; }
 
-  .progress { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 26px; }
-  .dots { display: flex; gap: 8px; }
-  .dot { width: 9px; height: 9px; border-radius: 999px; background: rgba(64,145,108,0.25); transition: background 0.35s, width 0.35s; }
-  .dot.done { background: var(--leaf-3); }
-  .dot.now { background: var(--leaf-5); width: 26px; }
+  .progress { display: flex; flex-direction: column; align-items: center; gap: 9px; margin-bottom: 22px; }
+  .bar { width: 100%; max-width: 260px; height: 7px; border-radius: 999px; background: rgba(64,145,108,0.18); overflow: hidden; }
+  .bar span { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--leaf-3), var(--leaf-5)); transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
   .stepText { font-size: 13px; font-weight: 700; color: var(--leaf-4); letter-spacing: 0.3px; }
 
   .qcard {
     display: none; text-align: left;
-    background: rgba(255,255,255,0.9); border: 2px solid rgba(183,228,199,0.9);
+    background: rgba(255,255,255,0.92); border: 2px solid rgba(183,228,199,0.9);
     border-radius: 24px; padding: 26px 22px; box-shadow: 0 14px 30px rgba(27,67,50,0.1);
   }
-  .qcard.active { display: block; animation: cardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .qcard.leaving { display: block; animation: cardOut 0.24s ease both; }
-  @keyframes cardIn { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
-  @keyframes cardOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-14px); } }
+  .qcard.active { display: block; }
+  .qcard.inR { animation: inR 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .qcard.inL { animation: inL 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .qcard.outL { animation: outL 0.22s ease both; }
+  .qcard.outR { animation: outR 0.22s ease both; }
+  @keyframes inR { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
+  @keyframes inL { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: none; } }
+  @keyframes outL { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(-24px); } }
+  @keyframes outR { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(24px); } }
 
   .qcard .qnum { font-size: 12px; font-weight: 800; color: var(--leaf-3); letter-spacing: 1px; }
   .qcard h3 { font-size: 21px; font-weight: 800; color: var(--leaf-6); line-height: 1.4; margin-top: 6px; letter-spacing: -0.5px; }
   .qcard .qsub { font-size: 13.5px; color: var(--leaf-4); font-weight: 500; margin-top: 8px; line-height: 1.5; }
 
   .opts { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+  .opts.grid { flex-direction: row; flex-wrap: wrap; gap: 9px; }
   .pill {
     width: 100%; text-align: left; padding: 15px 20px; border-radius: 16px;
     border: 2px solid var(--leaf-2); background: #fff; color: var(--leaf-5);
     font-size: 15.5px; font-weight: 600; cursor: pointer;
     transition: transform 0.15s, background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s;
   }
+  .opts.grid .pill { width: auto; padding: 11px 15px; font-size: 14.5px; border-radius: 999px; }
   .pill:hover { border-color: var(--leaf-3); transform: translateX(3px); }
+  .opts.grid .pill:hover { transform: translateY(-2px); }
   .pill.selected {
     background: linear-gradient(150deg, var(--leaf-3), var(--leaf-5));
     color: #fff; border-color: var(--leaf-5);
     box-shadow: 0 8px 18px rgba(45,106,79,0.3); transform: translateX(3px);
   }
+  .opts.grid .pill.selected { transform: translateY(-2px); }
+  .pill .meta { display: block; font-size: 12.5px; font-weight: 600; opacity: 0.75; margin-top: 3px; }
 
-  #backBtn {
-    margin-top: 18px; padding: 9px 20px; font-size: 13.5px; font-weight: 600;
-    border-radius: 999px; border: none; background: rgba(255,255,255,0.75); color: var(--leaf-4);
-    cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.3s, background 0.2s;
+  .multiNext {
+    margin-top: 18px; width: 100%; padding: 15px; font-size: 16px; font-weight: 800;
+    border-radius: 16px; border: none; background: #dbe9df; color: #9fb6a8; cursor: not-allowed;
+    transition: background 0.25s, color 0.25s, box-shadow 0.25s;
   }
-  #backBtn.show { opacity: 1; pointer-events: auto; }
-  #backBtn:hover { background: #fff; }
+  .multiNext.ready {
+    background: linear-gradient(150deg, var(--leaf-4), var(--leaf-6));
+    color: #fff; cursor: pointer; box-shadow: 0 10px 22px rgba(27,67,50,0.26);
+  }
 
-  /* ── 3. 방 선택 화면 : 숲속 오솔길 ── */
-  #screen3 { padding: 0; justify-content: flex-start; background: var(--leaf-6); }
-  .roomBtn {
-    flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 6px; border: none; border-top: 2px solid rgba(255,255,255,0.35);
-    color: #fff; cursor: pointer; padding: 20px; text-shadow: 0 2px 6px rgba(27,67,50,0.35);
-    transition: filter 0.25s;
-  }
-  .roomBtn:first-child { border-top: none; }
-  .roomBtn:nth-of-type(1) { background: linear-gradient(150deg, #9be0c0, var(--leaf-4)); }
-  .roomBtn:nth-of-type(2) { background: linear-gradient(150deg, var(--leaf-3), var(--leaf-5)); }
-  .roomBtn:nth-of-type(3) { background: linear-gradient(150deg, #86d7ea, var(--leaf-4)); }
-  .roomBtn:hover { filter: brightness(1.08); }
-  .roomBtn .name { font-size: 28px; font-weight: 800; }
-  .roomBtn .status { font-size: 15px; font-weight: 500; opacity: 0.95; }
-  .roomBtn .badge {
-    font-size: 12px; font-weight: 800; background: rgba(255,255,255,0.92); color: var(--leaf-5);
-    padding: 4px 12px; border-radius: 999px; text-shadow: none; display: none;
-  }
-  .roomBtn.mine .badge { display: inline-block; }
-  .roomBtn.mine { box-shadow: inset 0 0 0 4px rgba(255,255,255,0.9); }
-
-  /* ── 4. 마무리 화면 : 볕 좋은 숲 ── */
-  #screen4 {
-    gap: 18px;
+  /* ── 3. 결과 화면 ── */
+  #screen3 {
+    gap: 0; padding-top: 76px;
     background:
-      radial-gradient(circle at 18% 18%, rgba(255,209,102,0.55) 0 60px, rgba(255,209,102,0) 61px),
+      radial-gradient(circle at 18% 16%, rgba(255,209,102,0.5) 0 60px, rgba(255,209,102,0) 61px),
       linear-gradient(var(--sky-2) 0%, #eaf7ea 50%, var(--leaf-1) 100%);
   }
-  #screen4 > *:not(.cloud):not(.treeline) { position: relative; z-index: 2; }
-  #screen4 p { color: var(--leaf-6); font-size: 20px; font-weight: 700; }
-  #screen4 .hint { color: var(--leaf-4); font-size: 14px; font-weight: 500; background: rgba(255,255,255,0.7); padding: 8px 16px; border-radius: 999px; }
+  #screen3 > *:not(.cloud):not(.treeline) { position: relative; z-index: 2; }
+  .resultWrap { width: 100%; max-width: 440px; display: flex; flex-direction: column; align-items: center; margin: auto 0; }
+
   #mascotLink { display: inline-block; animation: bob 4.5s ease-in-out infinite; filter: drop-shadow(0 10px 18px rgba(27,67,50,0.22)); transition: transform 0.2s; }
   #mascotLink:hover { transform: scale(1.04); }
+  #resultTitle { margin-top: 10px; font-size: 25px; font-weight: 900; color: var(--leaf-6); letter-spacing: -1px; line-height: 1.35; }
+  #resultTitle b { color: var(--leaf-4); }
+  #resultWaiting { margin-top: 9px; font-size: 14px; font-weight: 700; color: var(--leaf-5); background: rgba(255,255,255,0.8); padding: 8px 16px; border-radius: 999px; }
+  #tagRow { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 14px; }
+  .tag { font-size: 12.5px; font-weight: 700; color: var(--leaf-5); background: rgba(255,255,255,0.9); border: 1.5px solid var(--leaf-2); padding: 5px 12px; border-radius: 999px; }
+
   #kakaoBtn {
-    display: inline-block; padding: 15px 34px; border-radius: 999px; text-decoration: none;
+    margin-top: 22px; width: 100%; max-width: 330px; display: block; text-align: center;
+    padding: 17px 30px; border-radius: 999px; text-decoration: none;
     background: linear-gradient(150deg, #ffe066, #fcd200); color: #3b2f00;
-    font-size: 16px; font-weight: 800; box-shadow: 0 10px 24px rgba(252,210,0,0.4);
-    transition: transform 0.2s, box-shadow 0.2s;
+    font-size: 17px; font-weight: 800; box-shadow: 0 12px 26px rgba(252,210,0,0.42);
+    transition: transform 0.18s, box-shadow 0.18s;
   }
-  #kakaoBtn:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(252,210,0,0.5); }
-  #restartBtn {
-    background: none; border: none; color: var(--leaf-4); font-size: 13px; font-weight: 600;
-    cursor: pointer; text-decoration: underline; padding: 4px;
+  #kakaoBtn:hover { transform: translateY(-3px); box-shadow: 0 16px 30px rgba(252,210,0,0.5); }
+
+  #otherToggle { margin-top: 16px; background: none; border: none; color: var(--leaf-4); font-size: 13.5px; font-weight: 700; cursor: pointer; text-decoration: underline; }
+  #otherRooms { width: 100%; display: none; flex-direction: column; gap: 8px; margin-top: 12px; }
+  #otherRooms.show { display: flex; animation: inR 0.35s ease both; }
+  .otherRoom {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 18px; border-radius: 14px; text-decoration: none;
+    background: rgba(255,255,255,0.88); border: 2px solid var(--leaf-2);
+    color: var(--leaf-5); font-size: 15px; font-weight: 700;
+    transition: border-color 0.2s, transform 0.15s;
   }
+  .otherRoom:hover { border-color: var(--leaf-3); transform: translateY(-2px); }
+  .otherRoom .cnt { font-size: 13px; font-weight: 600; color: var(--leaf-4); }
+
+  #restartBtn { margin-top: 14px; background: none; border: none; color: var(--leaf-4); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 4px; }
 
   /* 작은 휴대폰 화면 */
   @media (max-width: 430px) {
-    #screen1 { gap: 12px; padding: 32px 18px; }
-    #screen1 .emoji { font-size: 56px; }
-    #screen1 h1 { font-size: 34px; letter-spacing: -1px; }
-    #screen1 .tagline { font-size: 13.5px; }
-    #screen1 .sub1 { font-size: 16px; }
-    #screen1 .sub2 { font-size: 13px; padding: 6px 12px; }
-    #dongInput { font-size: 20px; width: 100%; max-width: 260px; }
-    #screen2 { padding: 32px 16px; }
+    #screen1 { padding: 30px 18px; }
+    #screen1 .emoji { font-size: 50px; margin-top: 12px; }
+    #screen1 h1 { font-size: 25px; letter-spacing: -1px; }
+    #screen1 h1 .big { font-size: 34px; }
+    .dongStat { padding: 11px 4px; }
+    .dongStat .n { font-size: 13.5px; }
+    .dongStat .c { font-size: 18px; }
+    #startBtn { padding: 16px 24px; font-size: 16px; }
+    #screen2, #screen3 { padding: 68px 16px 30px; }
     .qcard { padding: 22px 18px; border-radius: 20px; }
     .qcard h3 { font-size: 19px; }
     .pill { padding: 14px 17px; font-size: 15px; }
-    .roomBtn .name { font-size: 24px; }
-    .roomBtn .status { font-size: 14px; }
-    #screen4 p { font-size: 18px; }
-    #screen4 svg { width: 170px; height: 170px; }
-    .treeline.back { height: 100px; }
-    .treeline.front { height: 84px; }
+    .opts.grid .pill { padding: 10px 13px; font-size: 13.5px; }
+    #resultTitle { font-size: 22px; }
+    #screen3 svg { width: 150px; height: 150px; }
+    .treeline.back { height: 92px; }
+    .treeline.front { height: 76px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cloud, #screen1 .emoji, #mascotLink { animation: none; }
-    .screen, .qcard.active, .qcard.leaving { transition-duration: 0.01s; animation-duration: 0.01s; }
+    .cloud, #screen1 .emoji, #mascotLink, #startBtn, .liveDot { animation: none; }
+    .screen, .qcard { transition-duration: 0.01s; animation-duration: 0.01s; }
   }
 </style>
 </head>
 <body>
 
-<!-- 1. 시작 -->
+<!-- 상단 바 : 뒤로가기 -->
+<div class="topbar" id="topbar">
+  <button id="backBtn" aria-label="뒤로가기">←</button>
+  <span class="brand">동네방내</span>
+</div>
+
+<!-- 1. 시작 : 지금 몇 명이 기다리는지 -->
 <div class="screen active" id="screen1">
   <div class="cloud c1"></div>
   <div class="cloud c2"></div>
-  <div class="emoji">🌳🦊🌳</div>
-  <h1>동네방내</h1>
-  <p class="tagline">우리 동네, 방 안에서 만나요</p>
-  <p class="sub1">어디 사세요?</p>
-  <p class="sub2">우산동 · 태장동 · 단계동 중 하나를 적어보세요</p>
-  <input id="dongInput" placeholder="예: 우산동" autocomplete="off" />
-  <div id="dongHint">&nbsp;</div>
+
+  <div class="heroWrap">
+    <span class="heroBadge"><span class="liveDot"></span>원주 우산동 · 태장동 · 단계동</span>
+    <div class="emoji">🌳🦊🌳</div>
+    <h1>지금 우리 동네에<br><span class="big" id="totalCount">0</span>명이 기다리고 있어요</h1>
+    <div class="wordmark">동네방내</div>
+
+    <div class="dongStats">
+      <div class="dongStat"><div class="n">우산동</div><div class="c" data-count="우산동">0<small>명</small></div></div>
+      <div class="dongStat"><div class="n">태장동</div><div class="c" data-count="태장동">0<small>명</small></div></div>
+      <div class="dongStat"><div class="n">단계동</div><div class="c" data-count="단계동">0<small>명</small></div></div>
+    </div>
+
+    <button id="startBtn">내 방 찾으러 가기 →</button>
+    <p class="ctaSub">1분이면 끝나요 · 질문 6개</p>
+  </div>
+
   <div class="treeline back"></div>
   <div class="treeline front"></div>
 </div>
 
-<!-- 2. 설문 (한 번에 한 질문씩) -->
+<!-- 2. 설문 -->
 <div class="screen" id="screen2">
   <div class="surveyWrap">
     <div class="progress">
-      <div class="dots">
-        <span class="dot now"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-      </div>
-      <div class="stepText" id="stepText">1 / 3</div>
+      <div class="bar"><span id="barFill"></span></div>
+      <div class="stepText" id="stepText">1 / 6</div>
     </div>
 
-    <div class="qcard active" data-q="outing">
+    <!-- Q1 : 관심사 (복수 선택) -->
+    <div class="qcard active" data-q="interests">
       <div class="qnum">QUESTION 1</div>
+      <h3>요즘 어떤 걸 할 때 시간 가는 줄 모르세요?</h3>
+      <p class="qsub">여러 개 골라도 괜찮아요. 비슷한 관심사를 가진 이웃을 찾아드릴게요.</p>
+      <div class="opts grid" data-multi="1">
+        <button class="pill" data-v="산책·운동">🚶 산책·운동</button>
+        <button class="pill" data-v="카페·맛집">☕ 카페·맛집</button>
+        <button class="pill" data-v="게임">🎮 게임</button>
+        <button class="pill" data-v="영화·드라마">🎬 영화·드라마</button>
+        <button class="pill" data-v="책·글쓰기">📚 책·글쓰기</button>
+        <button class="pill" data-v="음악">🎵 음악</button>
+        <button class="pill" data-v="그림·만들기">🎨 그림·만들기</button>
+        <button class="pill" data-v="요리·베이킹">🍳 요리·베이킹</button>
+        <button class="pill" data-v="반려동물">🐾 반려동물</button>
+        <button class="pill" data-v="자기계발">💼 자기계발</button>
+      </div>
+      <button class="multiNext" disabled>하나 이상 골라주세요</button>
+    </div>
+
+    <!-- Q2 : 어울리고 싶은 방식 -->
+    <div class="qcard" data-q="style">
+      <div class="qnum">QUESTION 2</div>
+      <h3>이웃과 어떤 식으로 어울리고 싶으세요?</h3>
+      <p class="qsub">부담 없는 쪽으로 골라주세요. 나중에 바꿔도 돼요.</p>
+      <div class="opts">
+        <button class="pill" data-v="채팅으로만">채팅으로 가볍게 이야기만<span class="meta">만나는 건 아직 부담스러워요</span></button>
+        <button class="pill" data-v="온라인 취미">온라인으로 취미를 같이<span class="meta">같이 보고, 같이 하고 싶어요</span></button>
+        <button class="pill" data-v="가끔 만나기">가끔은 밖에서도 만나기<span class="meta">산책이나 커피 한잔 정도</span></button>
+        <button class="pill" data-v="정보 교류">동네 정보만 주고받기<span class="meta">맛집, 생활 정보 위주로</span></button>
+        <button class="pill" data-v="아직 모르겠음">아직 잘 모르겠어요<span class="meta">일단 분위기부터 볼래요</span></button>
+      </div>
+    </div>
+
+    <!-- Q3 : 외출 빈도 -->
+    <div class="qcard" data-q="outing">
+      <div class="qnum">QUESTION 3</div>
       <h3>일주일에 외출은 얼마나 하시나요?</h3>
       <p class="qsub">산책, 장보기처럼 가벼운 나들이도 괜찮아요.</p>
       <div class="opts">
@@ -250,8 +351,9 @@
       </div>
     </div>
 
+    <!-- Q4 : 혼자라고 느끼는 정도 -->
     <div class="qcard" data-q="isolation">
-      <div class="qnum">QUESTION 2</div>
+      <div class="qnum">QUESTION 4</div>
       <h3>요즘 혼자라고 느끼는 순간이 있으신가요?</h3>
       <p class="qsub">정답은 없어요. 가장 가까운 쪽을 골라주세요.</p>
       <div class="opts">
@@ -263,75 +365,81 @@
       </div>
     </div>
 
+    <!-- Q5 : 연령대 -->
     <div class="qcard" data-q="age">
-      <div class="qnum">QUESTION 3</div>
+      <div class="qnum">QUESTION 5</div>
       <h3>연령대가 어떻게 되시나요?</h3>
       <p class="qsub">비슷한 또래끼리 편하게 이야기 나누시라고 여쭤봐요.</p>
       <div class="opts">
-        <button class="pill" data-v="20대 초반">20대 초반 (20~23세)</button>
-        <button class="pill" data-v="20대 중반">20대 중반 (24~26세)</button>
-        <button class="pill" data-v="20대 후반">20대 후반 (27~29세)</button>
-        <button class="pill" data-v="30대 초반">30대 초반 (30~33세)</button>
+        <button class="pill" data-v="20대 초반">20대 초반<span class="meta">20~23세</span></button>
+        <button class="pill" data-v="20대 중반">20대 중반<span class="meta">24~26세</span></button>
+        <button class="pill" data-v="20대 후반">20대 후반<span class="meta">27~29세</span></button>
+        <button class="pill" data-v="30대 초반">30대 초반<span class="meta">30~33세</span></button>
       </div>
     </div>
 
-    <button id="backBtn">← 이전 질문</button>
+    <!-- Q6 : 지역 (마지막) -->
+    <div class="qcard" data-q="dong">
+      <div class="qnum">LAST QUESTION</div>
+      <h3>마지막이에요. 어느 동네에 사세요?</h3>
+      <p class="qsub">고르시면 바로 그 동네 방으로 안내해드릴게요.</p>
+      <div class="opts" id="dongOpts">
+        <button class="pill" data-v="우산동">우산동<span class="meta">이웃 <b data-wait="우산동">0</b>명이 기다리는 중</span></button>
+        <button class="pill" data-v="태장동">태장동<span class="meta">이웃 <b data-wait="태장동">0</b>명이 기다리는 중</span></button>
+        <button class="pill" data-v="단계동">단계동<span class="meta">이웃 <b data-wait="단계동">0</b>명이 기다리는 중</span></button>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- 3. 방 선택 -->
+<!-- 3. 결과 -->
 <div class="screen" id="screen3">
-  <button class="roomBtn" data-dong="우산동">
-    <span class="badge">내 동네</span>
-    <span class="name">우산동 방</span>
-    <span class="status">지금 입장할 수 있어요</span>
-  </button>
-  <button class="roomBtn" data-dong="태장동">
-    <span class="badge">내 동네</span>
-    <span class="name">태장동 방</span>
-    <span class="status">지금 입장할 수 있어요</span>
-  </button>
-  <button class="roomBtn" data-dong="단계동">
-    <span class="badge">내 동네</span>
-    <span class="name">단계동 방</span>
-    <span class="status">지금 입장할 수 있어요</span>
-  </button>
-</div>
-
-<!-- 4. 마무리 -->
-<div class="screen" id="screen4">
   <div class="cloud c1"></div>
   <div class="cloud c2"></div>
-  <p id="roomLabel">방으로 이동할 준비가 됐어요</p>
-  <a id="mascotLink" href="#" target="_blank" rel="noopener noreferrer">
-    <svg width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="110" cy="202" rx="62" ry="10" fill="#1b4332" opacity="0.12"/>
-      <rect x="107" y="38" width="6" height="18" rx="3" fill="#7f5539"/>
-      <path d="M110 44 C110 28 121 20 134 18 C132 33 123 42 110 44 Z" fill="#74c69d"/>
-      <circle cx="110" cy="120" r="80" fill="#2d6a4f"/>
-      <ellipse cx="70" cy="70" rx="26" ry="34" fill="#2d6a4f"/>
-      <ellipse cx="150" cy="70" rx="26" ry="34" fill="#2d6a4f"/>
-      <ellipse cx="70" cy="78" rx="12" ry="16" fill="#b7e4c7"/>
-      <ellipse cx="150" cy="78" rx="12" ry="16" fill="#b7e4c7"/>
-      <ellipse cx="110" cy="142" rx="46" ry="40" fill="#d8f3dc" opacity="0.5"/>
-      <circle cx="82" cy="118" r="9" fill="#fff"/>
-      <circle cx="138" cy="118" r="9" fill="#fff"/>
-      <circle cx="82" cy="120" r="4" fill="#1b4332"/>
-      <circle cx="138" cy="120" r="4" fill="#1b4332"/>
-      <ellipse cx="110" cy="140" rx="10" ry="7" fill="#1b4332"/>
-      <path d="M95 155 Q110 165 125 155" stroke="#1b4332" stroke-width="4" fill="none" stroke-linecap="round"/>
-      <circle cx="60" cy="140" r="10" fill="#ffd166" opacity="0.7"/>
-      <circle cx="160" cy="140" r="10" fill="#ffd166" opacity="0.7"/>
-    </svg>
-  </a>
-  <a id="kakaoBtn" href="#" target="_blank" rel="noopener noreferrer">카카오톡 오픈채팅 열기</a>
-  <p class="hint">캐릭터나 버튼을 누르면 카카오톡으로 이동해요</p>
-  <button id="restartBtn">처음부터 다시 하기</button>
+
+  <div class="resultWrap">
+    <a id="mascotLink" href="#" target="_blank" rel="noopener noreferrer">
+      <svg width="190" height="190" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="110" cy="202" rx="62" ry="10" fill="#1b4332" opacity="0.12"/>
+        <rect x="107" y="38" width="6" height="18" rx="3" fill="#7f5539"/>
+        <path d="M110 44 C110 28 121 20 134 18 C132 33 123 42 110 44 Z" fill="#74c69d"/>
+        <circle cx="110" cy="120" r="80" fill="#2d6a4f"/>
+        <ellipse cx="70" cy="70" rx="26" ry="34" fill="#2d6a4f"/>
+        <ellipse cx="150" cy="70" rx="26" ry="34" fill="#2d6a4f"/>
+        <ellipse cx="70" cy="78" rx="12" ry="16" fill="#b7e4c7"/>
+        <ellipse cx="150" cy="78" rx="12" ry="16" fill="#b7e4c7"/>
+        <ellipse cx="110" cy="142" rx="46" ry="40" fill="#d8f3dc" opacity="0.5"/>
+        <circle cx="82" cy="118" r="9" fill="#fff"/>
+        <circle cx="138" cy="118" r="9" fill="#fff"/>
+        <circle cx="82" cy="120" r="4" fill="#1b4332"/>
+        <circle cx="138" cy="120" r="4" fill="#1b4332"/>
+        <ellipse cx="110" cy="140" rx="10" ry="7" fill="#1b4332"/>
+        <path d="M95 155 Q110 165 125 155" stroke="#1b4332" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <circle cx="60" cy="140" r="10" fill="#ffd166" opacity="0.7"/>
+        <circle cx="160" cy="140" r="10" fill="#ffd166" opacity="0.7"/>
+      </svg>
+    </a>
+
+    <h2 id="resultTitle"><b>우산동</b> 방을 찾았어요!</h2>
+    <div id="resultWaiting">이웃 0명이 기다리는 중</div>
+    <div id="tagRow"></div>
+
+    <a id="kakaoBtn" href="#" target="_blank" rel="noopener noreferrer">카카오톡 오픈채팅 열기</a>
+
+    <button id="otherToggle">다른 동네 방도 볼래요</button>
+    <div id="otherRooms"></div>
+
+    <button id="restartBtn">처음부터 다시 하기</button>
+  </div>
+
   <div class="treeline back"></div>
   <div class="treeline front"></div>
 </div>
 
 <script>
+(function () {
+  "use strict";
+
   var DONGS = ["우산동", "태장동", "단계동"];
 
   var KAKAO_LINKS = {
@@ -340,126 +448,225 @@
     "단계동": "https://open.kakao.com/o/geznGHJi"
   };
 
-  var answers = { outing: null, isolation: null, age: null };
-  var myDong = null;
+  /* 방마다 기다리는 인원. 실제 인원으로 바꿔서 쓰세요. */
+  var WAITING = { "우산동": 12, "태장동": 9, "단계동": 7 };
 
-  /* ── 화면 전환 ── */
-  function showScreen(n) {
-    document.querySelectorAll(".screen").forEach(function (el) { el.classList.remove("active"); });
-    document.getElementById("screen" + n).classList.add("active");
+  var answers = { interests: [], style: null, outing: null, isolation: null, age: null, dong: null };
+
+  var topbar   = document.getElementById("topbar");
+  var backBtn  = document.getElementById("backBtn");
+  var cards    = Array.prototype.slice.call(document.querySelectorAll(".qcard"));
+  var barFill  = document.getElementById("barFill");
+  var stepText = document.getElementById("stepText");
+
+  /* ───────── 인원수 카운트업 ───────── */
+  var total = DONGS.reduce(function (s, d) { return s + WAITING[d]; }, 0);
+
+  function countUp(el, to, ms) {
+    var start = null;
+    function frame(t) {
+      if (start === null) start = t;
+      var p = Math.min((t - start) / ms, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.firstChild.nodeValue = String(Math.round(to * eased));
+      if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
   }
 
-  /* ── 1. 동네 입력 ── */
-  var dongInput = document.getElementById("dongInput");
-  var dongHint = document.getElementById("dongHint");
-  var moving = false;
+  countUp(document.getElementById("totalCount"), total, 1100);
+  document.querySelectorAll("[data-count]").forEach(function (el) {
+    countUp(el, WAITING[el.getAttribute("data-count")], 1100);
+  });
+  document.querySelectorAll("[data-wait]").forEach(function (el) {
+    el.textContent = WAITING[el.getAttribute("data-wait")];
+  });
 
-  dongInput.addEventListener("input", function () {
-    if (moving) return;
-    var v = dongInput.value.trim();
-    if (DONGS.indexOf(v) !== -1) {
-      myDong = v;
-      moving = true;
-      dongHint.textContent = v + " 이웃이시군요, 반가워요!";
-      dongHint.classList.add("show");
-      dongInput.blur();
-      setTimeout(function () { showScreen(2); }, 900);
-    } else {
-      dongHint.textContent = " ";
-      dongHint.classList.remove("show");
+  /* ───────── 화면 이동 (브라우저 뒤로가기 연동) ───────── */
+  var view = { screen: 1, step: 0 };
+  var animating = false;
+
+  function setCard(step, dir) {
+    var cur = cards[view.step];
+    var next = cards[step];
+    if (cur === next) { paintProgress(step); return; }
+
+    animating = true;
+    cur.classList.add(dir > 0 ? "outL" : "outR");
+    setTimeout(function () {
+      cur.classList.remove("active", "outL", "outR");
+      next.classList.remove("outL", "outR", "inL", "inR");
+      next.classList.add("active", dir > 0 ? "inR" : "inL");
+      paintProgress(step);
+      animating = false;
+    }, 210);
+  }
+
+  function paintProgress(step) {
+    barFill.style.width = ((step + 1) / cards.length * 100) + "%";
+    stepText.textContent = (step + 1) + " / " + cards.length;
+  }
+
+  function apply(next) {
+    var prev = view;
+
+    /* 답을 안 한 채로 결과 화면에 들어오면 설문으로 되돌립니다. */
+    if (next.screen === 3 && !answers.dong) next = { screen: 2, step: cards.length - 1 };
+
+    if (next.screen === 2) {
+      if (prev.screen === 2) {
+        setCard(next.step, next.step >= prev.step ? 1 : -1);
+      } else {
+        cards.forEach(function (c) { c.classList.remove("active", "inL", "inR", "outL", "outR"); });
+        cards[next.step].classList.add("active");
+        paintProgress(next.step);
+      }
+    }
+
+    if (next.screen === 3) renderResult();
+
+    if (next.screen !== prev.screen) {
+      document.querySelectorAll(".screen").forEach(function (el) { el.classList.remove("active"); });
+      document.getElementById("screen" + next.screen).classList.add("active");
+      document.getElementById("screen" + next.screen).scrollTop = 0;
+    }
+
+    topbar.classList.toggle("show", next.screen > 1);
+    view = next;
+  }
+
+  /* history API 를 못 쓰는 환경(로컬 file:// 등)에서는 내부 스택으로 대신합니다. */
+  var useHistory = true;
+  var stack = [{ screen: 1, step: 0 }];
+
+  try { history.replaceState(view, ""); } catch (err) { useHistory = false; }
+
+  function nav(next) {
+    if (animating) return;
+    if (useHistory) {
+      try { history.pushState(next, ""); } catch (err) { useHistory = false; }
+    }
+    if (!useHistory) stack.push(next);
+    apply(next);
+  }
+
+  function goBack() {
+    if (useHistory) { history.back(); return; }
+    if (stack.length > 1) { stack.pop(); apply(stack[stack.length - 1]); }
+  }
+
+  window.addEventListener("popstate", function (e) {
+    apply(e.state || { screen: 1, step: 0 });
+  });
+
+  paintProgress(0);
+
+  /* 상단 화살표 = 브라우저 뒤로가기와 같은 동작 */
+  backBtn.addEventListener("click", goBack);
+
+  /* ───────── 1. 시작 ───────── */
+  document.getElementById("startBtn").addEventListener("click", function () {
+    nav({ screen: 2, step: 0 });
+  });
+
+  /* ───────── 2. 설문 ───────── */
+  function advance() {
+    if (view.step < cards.length - 1) nav({ screen: 2, step: view.step + 1 });
+    else nav({ screen: 3, step: view.step });
+  }
+
+  cards.forEach(function (card, idx) {
+    var q = card.getAttribute("data-q");
+    var group = card.querySelector(".opts");
+    var multi = group.getAttribute("data-multi") === "1";
+    var nextBtn = card.querySelector(".multiNext");
+
+    group.querySelectorAll(".pill").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (animating) return;
+        var v = btn.getAttribute("data-v");
+
+        if (multi) {
+          btn.classList.toggle("selected");
+          var picked = Array.prototype.slice.call(group.querySelectorAll(".pill.selected"))
+            .map(function (b) { return b.getAttribute("data-v"); });
+          answers[q] = picked;
+          nextBtn.disabled = picked.length === 0;
+          nextBtn.classList.toggle("ready", picked.length > 0);
+          nextBtn.textContent = picked.length ? picked.length + "개 골랐어요 · 다음" : "하나 이상 골라주세요";
+          return;
+        }
+
+        answers[q] = v;
+        group.querySelectorAll(".pill").forEach(function (b) { b.classList.remove("selected"); });
+        btn.classList.add("selected");
+        setTimeout(advance, idx === cards.length - 1 ? 520 : 380);
+      });
+    });
+
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        if (!nextBtn.disabled) advance();
+      });
     }
   });
 
-  /* ── 2. 설문 : 한 번에 한 질문씩 ── */
-  var cards = Array.prototype.slice.call(document.querySelectorAll(".qcard"));
-  var dots = Array.prototype.slice.call(document.querySelectorAll(".dot"));
-  var stepText = document.getElementById("stepText");
-  var backBtn = document.getElementById("backBtn");
-  var step = 0;
-  var animating = false;
+  /* ───────── 3. 결과 ───────── */
+  var resultTitle   = document.getElementById("resultTitle");
+  var resultWaiting = document.getElementById("resultWaiting");
+  var tagRow        = document.getElementById("tagRow");
+  var kakaoBtn      = document.getElementById("kakaoBtn");
+  var mascotLink    = document.getElementById("mascotLink");
+  var otherRooms    = document.getElementById("otherRooms");
+  var otherToggle   = document.getElementById("otherToggle");
 
-  function paintProgress() {
-    dots.forEach(function (d, i) {
-      d.classList.toggle("done", i < step);
-      d.classList.toggle("now", i === step);
+  function renderResult() {
+    var dong = answers.dong;
+    resultTitle.innerHTML = "<b>" + dong + "</b> 방을 찾았어요!";
+    resultWaiting.textContent = "이웃 " + WAITING[dong] + "명이 기다리는 중";
+    kakaoBtn.href = KAKAO_LINKS[dong];
+    mascotLink.href = KAKAO_LINKS[dong];
+
+    tagRow.innerHTML = "";
+    answers.interests.concat(answers.age ? [answers.age] : []).forEach(function (t) {
+      var s = document.createElement("span");
+      s.className = "tag";
+      s.textContent = "#" + t;
+      tagRow.appendChild(s);
     });
-    stepText.textContent = (step + 1) + " / " + cards.length;
-    backBtn.classList.toggle("show", step > 0);
+
+    otherRooms.innerHTML = "";
+    otherRooms.classList.remove("show");
+    otherToggle.textContent = "다른 동네 방도 볼래요";
+    DONGS.filter(function (d) { return d !== dong; }).forEach(function (d) {
+      var a = document.createElement("a");
+      a.className = "otherRoom";
+      a.href = KAKAO_LINKS[d];
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.innerHTML = "<span>" + d + " 방</span><span class='cnt'>" + WAITING[d] + "명 대기 중 →</span>";
+      otherRooms.appendChild(a);
+    });
   }
 
-  function goToStep(next, dir) {
-    if (animating || next === step) return;
-    animating = true;
-    var from = cards[step];
-    from.classList.add("leaving");
-    setTimeout(function () {
-      from.classList.remove("active", "leaving");
-      step = next;
-      cards[step].classList.add("active");
-      paintProgress();
-      animating = false;
-    }, 240);
-  }
-
-  cards.forEach(function (card) {
-    var q = card.getAttribute("data-q");
-    card.querySelectorAll(".pill").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        if (animating) return;
-        answers[q] = btn.getAttribute("data-v");
-        card.querySelectorAll(".pill").forEach(function (b) { b.classList.remove("selected"); });
-        btn.classList.add("selected");
-
-        if (step < cards.length - 1) {
-          setTimeout(function () { goToStep(step + 1); }, 420);
-        } else {
-          setTimeout(function () { showScreen(3); }, 620);
-        }
-      });
-    });
+  otherToggle.addEventListener("click", function () {
+    var open = otherRooms.classList.toggle("show");
+    otherToggle.textContent = open ? "접기" : "다른 동네 방도 볼래요";
   });
 
-  backBtn.addEventListener("click", function () {
-    if (step > 0) goToStep(step - 1);
-  });
-
-  paintProgress();
-
-  /* ── 3. 방 선택 ── */
-  document.querySelectorAll(".roomBtn").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var dong = btn.getAttribute("data-dong");
-      document.getElementById("roomLabel").textContent = dong + " 방으로 이동할 준비가 됐어요";
-      document.getElementById("mascotLink").href = KAKAO_LINKS[dong];
-      document.getElementById("kakaoBtn").href = KAKAO_LINKS[dong];
-      showScreen(4);
-    });
-  });
-
-  /* 내 동네 강조 : 설문이 끝나고 3번 화면이 뜰 때 표시 */
-  var screen3 = document.getElementById("screen3");
-  new MutationObserver(function () {
-    if (!screen3.classList.contains("active") || !myDong) return;
-    document.querySelectorAll(".roomBtn").forEach(function (btn) {
-      btn.classList.toggle("mine", btn.getAttribute("data-dong") === myDong);
-    });
-  }).observe(screen3, { attributes: true, attributeFilter: ["class"] });
-
-  /* ── 4. 다시 시작 ── */
   document.getElementById("restartBtn").addEventListener("click", function () {
-    answers = { outing: null, isolation: null, age: null };
-    myDong = null;
-    moving = false;
-    dongInput.value = "";
-    dongHint.textContent = " ";
-    dongHint.classList.remove("show");
+    answers = { interests: [], style: null, outing: null, isolation: null, age: null, dong: null };
     document.querySelectorAll(".pill").forEach(function (b) { b.classList.remove("selected"); });
-    cards.forEach(function (c) { c.classList.remove("active", "leaving"); });
-    step = 0;
+    document.querySelectorAll(".multiNext").forEach(function (b) {
+      b.disabled = true;
+      b.classList.remove("ready");
+      b.textContent = "하나 이상 골라주세요";
+    });
+    cards.forEach(function (c) { c.classList.remove("active", "inL", "inR", "outL", "outR"); });
     cards[0].classList.add("active");
-    paintProgress();
-    showScreen(1);
+    nav({ screen: 1, step: 0 });
   });
+})();
 </script>
 
 </body>
